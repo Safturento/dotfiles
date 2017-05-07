@@ -1,0 +1,196 @@
+[colors]
+	dark  = #222
+	medium = #3E4F56
+	light  = #D6E9F0
+	active = #00ADEF
+	alert  = #d8695f
+
+	foreground = ${colors.light}
+	background = ${colors.dark}
+	text = ${colors.light}
+	activeText = ${colors.active}
+
+[bar/main]
+	monitor= ${env:MONITOR:DVI-I-1}
+	width = 100%
+	height = 30
+
+	bottom = false
+
+	offset-y = 0
+	offset-x = 0
+	fixed-center = true
+
+	background = ${colors.background}
+	foreground = ${colors.foreground}
+
+	line-size  = 0
+	line-color = ${colors.active}
+	
+	; Values applied to all borders
+	; Individual side values can be defined using:
+	;   border-{left,top,right,bottom}-size
+	;   border-{left,top,right,bottom}-color
+	border-size = 0
+;	border-color = ${colors.active}
+	radius = 0
+
+	; Number of spaces to add at the beginning/end of the bar
+	; Individual side values can be defined using:
+	;   padding-{left,right}
+	padding-left  = 0
+	padding-right = 2
+
+	; Number of spaces to add before/after each module
+	; Individual side values can be defined using:
+	;   module-margin-{left,right}
+	module-margin-left  = 1
+	module-margin-right = 1
+
+	; Fonts are defined using <font-name>;<vertical-offset>
+	; Font names are specified using a fontconfig pattern.
+	;   font-0 = NotoSans-Regular:size=8;2
+	;   font-1 = MaterialIcons:size=10
+	;   font-2 = Termsynu:size=8;-1
+	;   font-3 = FontAwesome:size=10
+	; See the Fonts wiki page for more details
+	font-0 = "ypn envypn:pixelsize=11;1"
+	font-1 = "unifont:fontformat=truetype:size=8:antialias=false;0"
+	font-2 = "FontAwesome:pixelsize=10;1"
+
+	modules-left   = i3
+	modules-center = date
+  modules-right  = cputemp gputemp pavolume dropbox
+
+	;wm-restack = i3
+	;override-redirect = true
+
+
+	; Enable support for inter-process messaging
+	; See the Messaging wiki page for more details.
+	enable-ipc = false
+
+	; Fallback click handlers that will be called if
+	; there's no matching module handler found.
+	click-left   = 
+	click-middle = 
+	click-right  =
+	
+	scroll-up    = i3wm-wsnext
+	scroll-down  = i3wm-wsprev
+	
+	double-click-left   =
+	double-click-middle =
+	double-click-right  =
+
+[module/i3]
+	type = internal/i3
+	ws-icon-0 = 1;
+	ws-icon-1 = 2;
+	ws-icon-2 = 3;
+	ws-icon-3 = 4;
+	ws-icon-4 = 5;
+	ws-icon-5 = 6;
+
+	format = <label-state> <label-mode>
+	index-sort = true
+	wrapping-scroll = false
+	fuzzy-match = true
+
+	; Only show workspaces on the same output as the bar
+	pin-workspaces = false
+
+	label-mode-padding = 2
+	label-mode-foreground = ${colors.text}
+	label-mode-background = ${colors.dark}
+
+	; focused = Active workspace on focused monitor
+	label-focused = %icon%
+	label-focused-background = ${colors.active}
+	label-focused-foreground = ${colors.background}
+;	label-focused-underline = ${colors.active}
+	label-focused-padding = 2
+
+	; unfocused = Inactive workspace on any monitor
+	label-unfocused = %icon%
+	label-unfocused-padding = 2
+
+	; visible = Active workspace on unfocused monitor
+	label-visible = %icon%
+	label-visible-background = ${colors.background}
+;	label-visible-underline = ${self.active}
+	label-visible-padding = ${self.label-focused-padding}
+
+	; urgent = Workspace with urgency hint set
+	label-urgent = %icon%
+	label-urgent-background = ${colors.alert}
+	label-urgent-padding = 2
+
+[module/dropbox]
+	type = custom/script
+	exec = ~/.config/polybar/dropbox.sh
+	format-underline = #458588
+	interval=2
+
+[module/volume]
+	type = internal/volume
+
+	format-volume =  <label-volume>
+	label-volume = %percentage%
+	label-volume-foreground = ${colors.text}
+
+	format-muted-prefix = "M "
+	format-muted-foreground = ${colors.text}
+
+	master-mixer = Master
+	master-soundcard = hw:0
+
+
+[module/pavolume]
+	type = custom/script
+	interval = .05
+	label = %output%
+	exec = ~/.config/polybar/modules/pavolume.sh
+	click-right = exec pavucontrol
+	click-left = ~/.config/polybar/modules/pavolume.sh --togmute
+	scroll-up = ~/.config/polybar/modules/pavolume.sh --up
+	scroll-down = ~/.config/polybar/modules/pavolume.sh --down
+
+[module/date]
+	type = internal/date
+	interval = 5
+
+	date =
+	date-alt = " %Y-%m-%d"
+
+	time = %H:%M
+	time-alt = %H:%M:%S
+
+	format-prefix = 
+	format-prefix-foreground = ${colors.text}
+	format-underline = #0a6cf5e
+
+	label = %date% %time%
+
+[module/cputemp]
+	type = custom/script
+
+	format = CPU <label>°C
+	label = %output%
+	label-underline = ${colors.text}
+	label-foreground = ${colors.text}
+	exec = "sensors | grep Physical | gawk '{print $2}' FPAT='[0-9]+'"
+	tail=tr
+	interval=2
+
+[module/gputemp]
+	type = custom/script
+
+	format = GPU <label>°C
+	label = %output%
+	label-underline = ${colors.text}
+	label-foreground = ${colors.text}
+	exec = "nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits"
+	tail=tr
+	interval=2
+

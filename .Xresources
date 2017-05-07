@@ -1,0 +1,97 @@
+#if __has_include(".extend.Xresources")
+#include ".extend.Xresources"
+#endif
+
+! ^ The above lines are no comments!
+! Leave them as they are if a file ~/.extend.Xresources is being used on your system.
+! config can be added there or also here below.
+! For comments use "!"
+
+#define termfont      -ypn-envypn-Medium-R-Normal--15-150-75-75-C-90-ISO8859-1
+URxvt*font:           termfont
+URxvt*boldFont:       termfont
+URxvt*italicFont:     termfont
+URxvt*boldItalicFont: termfont
+URxvt*letterSpace: 0
+URxvt*lineSpace: 0
+
+URxvt*scrollBar: false
+URxvt*allow_bold: false
+
+!c9d8e0 00ADEF 007ead 005f82 004b66 064e68
+
+!! black dark/light
+URxvt*color0:		#10262b
+URxvt*color8:		#29393d
+
+!! red dark/light
+URxvt*color1:		#a94147
+URxvt*color9:		#a94147
+
+!! green dark/light
+URxvt*color2:		#dbf1f9
+URxvt*color10:	#dbf1f9
+
+!! yellow dark/light
+URxvt*color3:		#78ceed
+URxvt*color11:	#78ceed
+
+!! blue dark/light
+URxvt*color4:		#36bced
+URxvt*color12:	#36bced
+
+!! magenta dark/light
+URxvt*color5:		#0097d1
+URxvt*color13:	#0097d1
+
+!! cyan dark/light
+URxvt*color6:		#036d96
+URxvt*color14:	#036d96
+
+!! white dark/light
+URxvt*color7:		#0c4c66
+URxvt*color15:	#0c4c66
+
+URxvt*background: #10262b
+URxvt*foreground: #c9d8e0
+
+URxvt*internalBorder: 20
+URxvt*url-launcher: /usr/bin/google-chrome-stable
+
+
+#define white #FFFFFF
+#define black #000000
+#define blue  #00ADEF
+#define red   #EF0036
+#define lGray #AAAAAA
+#define mGray #777777
+#define dGray #333333
+
+rofi.font: ypn envypn 11
+rofi.width: 20
+rofi.lines:20
+rofi.columns: 1
+rofi.opacity: 80
+rofi.padding: 50
+rofi.case-sensitive: false
+rofi.fuzzy: true
+rofi.glob: true
+rofi.terminal: urxvt
+rofi.ssh-client: ssh
+rofi.ssh-command: {terminal} -e "{ssh-client} {host}"
+rof.sidebar-mode: true
+rofi.tokenize: true
+
+rofi.hide-scrollbar: true
+
+! ------------------------------------------------------------------------------
+! ROFI Color theme
+! ------------------------------------------------------------------------------
+rofi.color-enabled: true
+!                  background     border         separator
+rofi.color-window: argb:e6222222, argb:e6222222, argb:0000000
+!                  bg            fg       alt-fg        hl-fg          hl-bg
+rofi.color-normal: argb:0000000, #b1bfc4, argb:0000000, argb:2e00adef, #4d93ae
+rofi.color-active: argb:0000000, #4d93ae, argb:0000000, argb:2b00adef, #4d93ae
+rofi.color-urgent: argb:f000000, #cc6060, argb:e000000, argb:d000000,  #fdf6e3
+
