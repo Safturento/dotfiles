@@ -18,41 +18,39 @@ URxvt*lineSpace: 0
 URxvt*scrollBar: false
 URxvt*allow_bold: false
 
-!c9d8e0 00ADEF 007ead 005f82 004b66 064e68
-
 !! black dark/light
-URxvt*color0:		#10262b
-URxvt*color8:		#29393d
+URxvt*color0:		#1d1f21
+URxvt*color8:		#1d1f21
 
 !! red dark/light
 URxvt*color1:		#a94147
 URxvt*color9:		#a94147
 
 !! green dark/light
-URxvt*color2:		#dbf1f9
-URxvt*color10:	#dbf1f9
+URxvt*color2:		#00668F
+URxvt*color10:	#00668F
 
 !! yellow dark/light
-URxvt*color3:		#78ceed
-URxvt*color11:	#78ceed
+URxvt*color3:		#0092CC
+URxvt*color11:	#0092CC
 
 !! blue dark/light
-URxvt*color4:		#36bced
-URxvt*color12:	#36bced
+URxvt*color4:		#0ABAFF
+URxvt*color12:	#0ABAFF
 
 !! magenta dark/light
-URxvt*color5:		#0097d1
-URxvt*color13:	#0097d1
+URxvt*color5:		#47CBFF
+URxvt*color13:	#47CBFF
 
 !! cyan dark/light
-URxvt*color6:		#036d96
-URxvt*color14:	#036d96
+URxvt*color6:		#85DCFF
+URxvt*color14:	#85DCFF
 
 !! white dark/light
-URxvt*color7:		#0c4c66
-URxvt*color15:	#0c4c66
+URxvt*color7:		#EBF9FF
+URxvt*color15:	#EBF9FF
 
-URxvt*background: #10262b
+URxvt*background: #1d1f21
 URxvt*foreground: #c9d8e0
 
 URxvt*internalBorder: 20
