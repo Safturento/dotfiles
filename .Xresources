@@ -8,7 +8,7 @@
 ! For comments use "!"
 
 #define termfont      -ypn-envypn-Medium-R-Normal--15-150-75-75-C-90-ISO8859-1
-*font:           termfont
+*font:           			termfont
 URxvt*boldFont:       termfont
 URxvt*italicFont:     termfont
 URxvt*boldItalicFont: termfont
@@ -19,35 +19,35 @@ URxvt*lineSpace: 0
 *allow_bold: false
 
 !! black dark/light
-*color0:		#1d1f21
-*color8:		#1d1f21
+*color0:	#1d1f21
+*color8:	#1d1f21
 
 !! red dark/light
-*color1:		#a94147
-*color9:		#a94147
+*color1:	#a94147
+*color9:	#a94147
 
 !! green dark/light
-*color2:		#00668F
+*color2:	#00668F
 *color10:	#00668F
 
 !! yellow dark/light
-*color3:		#0092CC
+*color3:	#0092CC
 *color11:	#0092CC
 
 !! blue dark/light
-*color4:		#0ABAFF
+*color4:	#0ABAFF
 *color12:	#0ABAFF
 
 !! magenta dark/light
-*color5:		#47CBFF
+*color5:	#47CBFF
 *color13:	#47CBFF
 
 !! cyan dark/light
-*color6:		#85DCFF
+*color6:	#85DCFF
 *color14:	#85DCFF
 
 !! white dark/light
-*color7:		#EBF9FF
+*color7:	#EBF9FF
 *color15:	#EBF9FF
 
 *background: #1d1f21
