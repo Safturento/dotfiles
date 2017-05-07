@@ -1,0 +1,16 @@
+# ignore everything by default, then whitelist files
+*
+
+!README.md
+!.gitignore
+
+!.Xresources
+!.yaourtrc
+
+!/.config/
+!/.config/.compton.conf
+!/.config/i3
+!/.config/i3/config
+!/.config/polybar
+!/.config/polybar/*
+!/.config/polybar/modules/*

@@ -8,50 +8,50 @@
 ! For comments use "!"
 
 #define termfont      -ypn-envypn-Medium-R-Normal--15-150-75-75-C-90-ISO8859-1
-URxvt*font:           termfont
+*font:           termfont
 URxvt*boldFont:       termfont
 URxvt*italicFont:     termfont
 URxvt*boldItalicFont: termfont
 URxvt*letterSpace: 0
 URxvt*lineSpace: 0
 
-URxvt*scrollBar: false
-URxvt*allow_bold: false
+*scrollBar: false
+*allow_bold: false
 
 !! black dark/light
-URxvt*color0:		#1d1f21
-URxvt*color8:		#1d1f21
+*color0:		#1d1f21
+*color8:		#1d1f21
 
 !! red dark/light
-URxvt*color1:		#a94147
-URxvt*color9:		#a94147
+*color1:		#a94147
+*color9:		#a94147
 
 !! green dark/light
-URxvt*color2:		#00668F
-URxvt*color10:	#00668F
+*color2:		#00668F
+*color10:	#00668F
 
 !! yellow dark/light
-URxvt*color3:		#0092CC
-URxvt*color11:	#0092CC
+*color3:		#0092CC
+*color11:	#0092CC
 
 !! blue dark/light
-URxvt*color4:		#0ABAFF
-URxvt*color12:	#0ABAFF
+*color4:		#0ABAFF
+*color12:	#0ABAFF
 
 !! magenta dark/light
-URxvt*color5:		#47CBFF
-URxvt*color13:	#47CBFF
+*color5:		#47CBFF
+*color13:	#47CBFF
 
 !! cyan dark/light
-URxvt*color6:		#85DCFF
-URxvt*color14:	#85DCFF
+*color6:		#85DCFF
+*color14:	#85DCFF
 
 !! white dark/light
-URxvt*color7:		#EBF9FF
-URxvt*color15:	#EBF9FF
+*color7:		#EBF9FF
+*color15:	#EBF9FF
 
-URxvt*background: #1d1f21
-URxvt*foreground: #c9d8e0
+*background: #1d1f21
+*foreground: #c9d8e0
 
 URxvt*internalBorder: 20
 URxvt*url-launcher: /usr/bin/google-chrome-stable
