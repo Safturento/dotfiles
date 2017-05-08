@@ -1,6 +1,10 @@
 set $mod Mod4
 set $alt Mod1
+
 exec_always setxkbmap -option caps:super #make capslock also a super
+exec xset fp+ /usr/share/fonts/envypn
+exec xset fp rehash
+
 floating_modifier $mod
 
 set $black	#000000
