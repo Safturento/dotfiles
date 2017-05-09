@@ -202,15 +202,13 @@ exec --no-startup-id xflux
 
 exec subl3
 assign [class="subl3"] 2
-exec terminator
-assign [class="terminator"] 2
+exec urxvt
+assign [class="urxvt"] 2
 
 exec thunar
 assign [class="thunar"] 5
 exec qbittorrent
 assign [class="qbittorrent"] 5
-
-
 
 # i3-gaps config 
 ########################

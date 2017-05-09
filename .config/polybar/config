@@ -1,9 +1,9 @@
 [colors]
-	dark  = #222
-	medium = #3E4F56
-	light  = #D6E9F0
-	active = #00ADEF
-	alert  = #d8695f
+	dark   = ${xrdb:color0:#222}
+	medium = ${xrdb:#3E4F56}
+	light  = ${xrdb:color7:#D6E9F0}
+	active = ${xrdb:color4:#00ADEF}
+	alert  = ${xrdb:color1:#d8695f}
 
 	foreground = ${colors.light}
 	background = ${colors.dark}

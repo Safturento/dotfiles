@@ -19,6 +19,10 @@ yaourt teiler
 yaourt neofetch
 yaourt w3m
 yaourt google-chrome
+yaourt discord
+yaourt nitrogen
+yaourt arc-gtk-theme
+yaourt paper-icon-theme
 ```
 Enabling bitmap fonts
 ```
