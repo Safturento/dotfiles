@@ -11,7 +11,7 @@
 	activeText = ${colors.active}
 
 [bar/main]
-	monitor= ${env:MONITOR:DVI-I-1}
+;	monitor= ${env:MONITOR:DVI-I-1}
 	width = 100%
 	height = 30
 
@@ -60,7 +60,7 @@
 
 	modules-left   = i3
 	modules-center = date
-  modules-right  = cputemp gputemp pavolume dropbox
+  modules-right  = cputemp pavolume battery dropbox
 
 	;wm-restack = i3
 	;override-redirect = true
@@ -128,9 +128,13 @@
 
 [module/dropbox]
 	type = custom/script
-	exec = ~/.config/polybar/dropbox.sh
-	format-underline = #458588
+	exec = ~/.config/polybar/modules/dropbox
 	interval=2
+
+[module/battery]
+	type = custom/script
+	exec = ~/.config/polybar/modules/battery
+	interval = 1
 
 [module/volume]
 	type = internal/volume
@@ -168,7 +172,6 @@
 
 	format-prefix = 
 	format-prefix-foreground = ${colors.text}
-	format-underline = #0a6cf5e
 
 	label = %date% %time%
 
