@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use open ":std", ":encoding(UTF-8)";
+
+my $status = `dropbox-cli status`;
+
+if 		($status =~ m/Dropbox/)	 { print "\x{f16b}"; }
+elsif ($status =~ m/Starting/) { print "\x{f141}"; }
+elsif ($status =~ m/Syncing/)	 { print "\x{f0ee}"; }
+
+exit(0);
