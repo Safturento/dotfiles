@@ -1,0 +1,29 @@
+#!/bin/perl
+
+use strict;
+use warnings;
+use open ":std", ":encoding(UTF-8)";
+use Term::ANSIColor;
+
+my $laptop_kb = "AT Translated Set 2 keyboard";
+my $usb_kb = "USB Keyboard";
+
+my $status;
+
+my $toggle = (defined $ARGV[0] and $ARGV[0] eq "toggle");
+
+if (`xinput list "$laptop_kb" | grep -i disable`){
+	if ($toggle){
+		`xinput enable "$laptop_kb"`;
+	}
+	$status = "OFF";
+}
+else{
+	if ($toggle){
+		`xinput disable "$laptop_kb"`;
+	}
+	$status = "ON";
+}
+
+
+print "\x{f11c} [$status]"

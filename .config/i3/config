@@ -2,8 +2,8 @@ set $mod Mod4
 set $alt Mod1
 
 exec_always setxkbmap -option caps:super #make capslock also a super
-exec xset fp+ /usr/share/fonts/envypn
-exec xset fp rehash
+exec_always xset fp+ /usr/share/fonts/envypn
+exec_always xset fp rehash
 
 floating_modifier $mod
 
@@ -20,7 +20,7 @@ gaps inner 45
 #smart_borders on
 
 # class										border	bg			text		indic.	child border
-client.focused						$dGray	$dGray	$black	$dBlue	$dBlue
+client.focused						$dGray	$dGray	$black	$blue		$blue
 client.focused_inactive		$dGray	$dGray	$black	$dGray	$dGray
 client.unfocused					$dGray	$dGray	$black	$dGray	$dGray
 client.urgent							$dGray	$dGray	$black	$dGray	$dGray
@@ -63,14 +63,16 @@ bindsym $mod+shift+f fullscreen toggle global
 bindsym $mod+$alt+space floating toggle
 bindsym $mod+shift+s sticky toggle
 
+# lock screen
+bindsym $mod+shift+l exec ~/.config/polybar/modules/i3lock.sh
+
 # change focus between tiling / floating windows
 bindsym $mod+space focus mode_toggle
 
-#termianl
+#terminal
 bindsym $mod+Return exec urxvt
 
 #assign workspaces to screens
-
 # move workspace to another screen
 bindsym $mod+$alt+1 move workspace to output left
 bindsym $mod+$alt+2 move workspace to output right
@@ -103,6 +105,15 @@ bindsym $mod+$alt+m move container to workspace 6
 bindsym $mod+$alt+shift+c reload
 bindsym $mod+$alt+r exec xrdb ~/.Xresources; restart
 bindsym $mod+$alt+shift+e exec "i3-nagbar -t warning -m 'Really exit?' -b 'Yes, exit i3' 'i3-msg exit'"
+
+# Pulse Audio controls
+bindsym XF86AudioRaiseVolume exec ~/.config/polybar/modules/pavolume.sh --up 			# increase sound volume
+bindsym XF86AudioLowerVolume exec ~/.config/polybar/modules/pavolume.sh --down 		# decrease sound volume
+bindsym XF86AudioMute				 exec ~/.config/polybar/modules/pavolume.sh --togmute # mute sound
+
+# Sreen brightness controls
+bindsym XF86MonBrightnessUp exec xbacklight -inc 10 # increase screen brightness
+bindsym XF86MonBrightnessDown exec xbacklight -dec 10 # decrease screen brightness
 
 #Toggle keyboard
 #bindsym $mod+$alt+i exec "xinput set-int-prop 17 'Device Enabled' 8 0"
@@ -196,24 +207,14 @@ exec xrdb -load ~/.Xresources;
 
 exec_always --no-startup-id nitrogen --set-zoom-fill /home/safturento/Dropbox/Photos/Wallpapers/Tri-Monitor/agCqv1G.jpg
 exec_always --no-startup-id killall -q compton; compton --config ~/.config/.compton.conf -b
-exec_always --no-startup-id ~/.config/polybar/launch.sh --log=1
+exec_always --no-startup-id ~/.config/polybar/launch.sh
 exec --no-startup-id dropbox-cli start
 exec --no-startup-id xflux
-
-exec subl3
-assign [class="subl3"] 2
-exec urxvt
-assign [class="urxvt"] 2
-
-exec thunar
-assign [class="thunar"] 5
-exec qbittorrent
-assign [class="qbittorrent"] 5
 
 # i3-gaps config 
 ########################
 # disables window titlebars
-for_window [class="^.*"] border pixel 3
+for_window [class="^.*"] border pixel 1
 #for_window [window_role="pop-up"] floating enable
 for_window [window_role="pop-bubble"] floating enable
 for_window [window_role="task_dialog"] floating enable

@@ -3,11 +3,12 @@
 use strict;
 use warnings;
 use open ":std", ":encoding(UTF-8)";
+use Term::ANSIColor;
 
 my $status = `dropbox-cli status`;
 
-if 		($status =~ m/Dropbox/)	 { print "\x{f16b}"; }
-elsif ($status =~ m/Starting/) { print "\x{f141}"; }
-elsif ($status =~ m/Syncing/)	 { print "\x{f0ee}"; }
-
+if 		($status =~ m/Dropbox/)	 { print "!\x{f16b}"; } # not started
+elsif ($status =~ m/Starting/) { print "\x{f141}"; }	# starting
+elsif ($status =~ m/Syncing/)	 { print "\x{f0ee}"; }	# syncing
+else 													 { print "\x{f16b}"; }	# up to date
 exit(0);

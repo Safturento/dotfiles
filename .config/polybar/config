@@ -11,7 +11,7 @@
 	activeText = ${colors.active}
 
 [bar/main]
-;	monitor= ${env:MONITOR:DVI-I-1}
+	monitor= ${env:MONITOR:LVDS1}
 	width = 100%
 	height = 30
 
@@ -60,7 +60,7 @@
 
 	modules-left   = i3
 	modules-center = date
-  modules-right  = cputemp pavolume battery dropbox
+  modules-right  = cputemp pavolume battery wlan backlight keyboard dropbox i3lock
 
 	;wm-restack = i3
 	;override-redirect = true
@@ -139,7 +139,7 @@
 [module/volume]
 	type = internal/volume
 
-	format-volume =  <label-volume>
+	format-volume = <label-volume>
 	label-volume = %percentage%
 	label-volume-foreground = ${colors.text}
 
@@ -149,10 +149,9 @@
 	master-mixer = Master
 	master-soundcard = hw:0
 
-
 [module/pavolume]
 	type = custom/script
-	interval = .05
+	interval = .10
 	label = %output%
 	exec = ~/.config/polybar/modules/pavolume.sh
 	click-right = exec pavucontrol
@@ -164,8 +163,8 @@
 	type = internal/date
 	interval = 5
 
-	date =
-	date-alt = " %Y-%m-%d"
+	date = "%A %B %d"
+	date-alt = "%Y-%m-%d"
 
 	time = %H:%M
 	time-alt = %H:%M:%S
@@ -173,7 +172,7 @@
 	format-prefix = 
 	format-prefix-foreground = ${colors.text}
 
-	label = %date% %time%
+	label = It's %time% on %date% 
 
 [module/cputemp]
 	type = custom/script
@@ -197,3 +196,58 @@
 	tail=tr
 	interval=2
 
+[module/wlan]
+	type = internal/network
+	interface = wlp3s0
+	interval = 3.0
+
+	format-connected = <label-connected>
+
+	label-connected = %essid%
+	label-disconnected = 
+	label-disconnected-foreground = ${colors.foreground}
+
+[module/keyboard]
+	type = custom/script
+	exec = ~/.config/polybar/modules/keyboard
+	click-right = ~/.config/polybar/modules/keyboard toggle
+	interval = 1
+
+[module/i3lock]
+	type = custom/script
+	format = <label>
+	label = %output%
+	exec = "echo "
+	interval = 10000
+	click-right = ~/.config/polybar/modules/i3lock.sh
+	click-left = ~/.config/polybar/modules/i3lock.sh
+
+[module/backlight]
+	type = internal/backlight
+
+	; Use the following command to list available cards:
+	; $ ls -1 /sys/class/backlight/
+	card = intel_backlight
+
+	; Available tags:
+	;   <label> (default)
+	;   <ramp>
+	;   <bar>
+	format = <ramp> <label>
+
+	; Available tokens:
+	;   %percentage% (default)
+	label = %percentage%%
+
+	; Only applies if <ramp> is used
+	ramp-0 = 🌕
+	ramp-1 = 🌔
+	ramp-2 = 🌓
+	ramp-3 = 🌒
+	ramp-4 = 🌑
+
+	; Only applies if <bar> is used
+	bar-width = 10
+	bar-indicator = |
+	bar-fill = ─
+	bar-empty = ─

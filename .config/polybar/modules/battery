@@ -11,34 +11,29 @@ open (ACPI, "acpi -b | grep 'Battery $bat_number' |") or die;
 $acpi = <ACPI>;
 close(ACPI);
 
-# print $acpi;
+# if ($acpi !~ /: (\w+), (\d+)%[, ]*(\d+:\d+)/){
+if ($acpi =~ /: (\w+), (\d+)%, (\d+:\d+):\d+ \w+/){
+	my $status = $1;
+	my $percent = $2;
+	my $output = "$percent%";
+	my $icon;
 
-if ($acpi !~ /: (\w+), (\d+)%, (\d+:\d+):\d+ \w+/){
-	die "$acpi\n";
-}
+	if ($status eq 'Charging'){ $icon = "\x{f1e6}"}
+	elsif ($percent < 10)  { $icon = "\x{f244}"; }
+	elsif ($percent < 25)  { $icon = "\x{f243}"; }
+	elsif ($percent < 50)  { $icon = "\x{f242}"; }
+	elsif ($percent < 75)  { $icon = "\x{f241}"; }
+	else { $icon = "\x{f240}"; }
+	#if ($percent <= 100) 
 
+	if ($status eq 'Discharging'){
+		$output .= " [$3]";
+	}
+	elsif ($status eq 'Charging'){
+		
+	}
 
-my $status = $1;
-my $percent = $2;
-my $output = "$percent%";
-
-my $icon;
-
-
-if ($status eq 'Charging'){ $icon = "\x{f1e6}"}
-elsif ($percent < 10)  { $icon = "\x{f244}"; }
-elsif ($percent < 25)  { $icon = "\x{f243}"; }
-elsif ($percent < 50)  { $icon = "\x{f242}"; }
-elsif ($percent < 75)  { $icon = "\x{f241}"; }
-elsif ($percent < 100) { $icon = "\x{f240}"; }
-
-if ($status eq 'Discharging'){
-	$output .= " [$3]";
-}
-elsif ($status eq 'Charging'){
-	
-}
-
-print "$icon $output\n";
+	print "$icon $output\n";
+}else { print "\x{f1e6} 100%"; }
 
 exit(0);
