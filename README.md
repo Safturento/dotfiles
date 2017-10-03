@@ -30,3 +30,7 @@ sudo rm /etc/fonts/conf.d/70-no-bitmaps.conf
 sudo ln /etc/fonts/conf.avail/70-yes-bitmaps.conf /etc/fonts/conf.d/
 sudo rm /etc/fonts/conf.d/10-scale-bitmap-fonts.conf
 ```
+Set your monitor environment variable using
+```
+export MONITOR="<monitor-ID>"
+```
