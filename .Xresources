@@ -37,3 +37,4 @@ rof.sidebar-mode: true
 rofi.tokenize: true
 
 rofi.hide-scrollbar: true
+rofi.theme: ~/.cache/wal/colors-rofi-dark.rasi

@@ -150,7 +150,7 @@
 	interval = 1
 
 [module/volume]
-	type = internal/volume
+	type = internal/alsa
 
 	format-volume =  <label-volume>%
 	label-volume = %percentage%

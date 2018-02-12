@@ -89,10 +89,10 @@ bindsym $mod+space focus mode_toggle
 bindsym $mod+Return exec urxvt
 
 ## quick terminal
-exec --no-startup-id urxvt -name metask
-for_window [instance="metask"] floating enable;
-for_window [instance="metask"] move scratchpad; [instance="metask"] scratchpad show; move position -1px -1px; resize set 1922 500; move scratchpad
-bindsym $mod+$alt+Return [instance="metask"] scratchpad show
+exec --no-startup-id urxvt -name quake
+for_window [instance="quake"] floating enable;
+for_window [instance="quake"] move scratchpad; [instance="quake"] scratchpad show; move position -1px -1px; resize set 1922 500; move scratchpad
+bindsym $mod+$alt+Return [instance="quake"] scratchpad show
 
 # bindsym $mod+$alt+Return exec ~/.config/i3/scripts/urxvt_quake.sh
 
