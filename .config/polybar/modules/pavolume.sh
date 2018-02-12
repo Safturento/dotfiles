@@ -102,7 +102,9 @@ function volMute {
 }
 
 function volMuteStatus {
-	curStatus=`pacmd list-sinks |grep -A 15 'index: '${active_sink}'' |awk '/muted/{ print $2}'`
+	curStatus= 'yes'
+
+#	curStatus=`pacmd list-sinks |grep -A 15 'index: '${active_sink}'' |awk '/muted/{ print $2}'`
 }
 
 

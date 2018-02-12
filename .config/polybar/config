@@ -1,19 +1,30 @@
-[colors]
-	dark   = ${xrdb:color0:#222}
-	medium = ${xrdb:#3E4F56}
-	light  = ${xrdb:color7:#D6E9F0}
-	active = ${xrdb:color4:#00ADEF}
-	alert  = ${xrdb:color1:#d8695f}
+;[colors]
+;	dark   = ${xrdb:color0:#222}
+;	medium = ${xrdb:#3E4F56}
+;	light  = ${xrdb:color7:#D6E9F0}
+;	active = ${xrdb:color4:#00ADEF}
+;	alert  = ${xrdb:color1:#d8695f}
+;
+;	foreground = ${colors.light}
+;	background = ${colors.dark}
+;	text = ${colors.light}
+;	activeText = ${colors.active}
 
+[colors]
+	dark   = ${xrdb:color0}
+	medium = ${xrdb:color2}
+	light  = ${xrdb:color7}
+	active = ${xrdb:color4}
+	alert  = ${xrdb:color1}
 	foreground = ${colors.light}
 	background = ${colors.dark}
 	text = ${colors.light}
 	activeText = ${colors.active}
 
 [bar/main]
-	monitor= ${env:MONITOR:LVDS1}
+	monitor= ${env:MONITOR:LVDS-1}
 	width = 100%
-	height = 30
+	height = 35
 
 	bottom = false
 
@@ -32,7 +43,7 @@
 	;   border-{left,top,right,bottom}-size
 	;   border-{left,top,right,bottom}-color
 	border-size = 0
-;	border-color = ${colors.active}
+	;	border-color = ${colors.active}
 	radius = 0
 
 	; Number of spaces to add at the beginning/end of the bar
@@ -54,13 +65,13 @@
 	;   font-2 = Termsynu:size=8;-1
 	;   font-3 = FontAwesome:size=10
 	; See the Fonts wiki page for more details
-	font-0 = "ypn envypn:pixelsize=11;1"
+	font-0 = "envypn:pixelsize=11;1"
 	font-1 = "unifont:fontformat=truetype:size=8:antialias=false;0"
 	font-2 = "FontAwesome:pixelsize=10;1"
 
 	modules-left   = i3
 	modules-center = date
-  modules-right  = cputemp pavolume battery wlan backlight keyboard dropbox i3lock
+	modules-right  = volume battery wlan backlight keyboard dropbox i3lock
 
 	;wm-restack = i3
 	;override-redirect = true
@@ -68,7 +79,7 @@
 
 	; Enable support for inter-process messaging
 	; See the Messaging wiki page for more details.
-	enable-ipc = false
+	enable-ipc = true
 
 	; Fallback click handlers that will be called if
 	; there's no matching module handler found.
@@ -134,16 +145,18 @@
 [module/battery]
 	type = custom/script
 	exec = ~/.config/polybar/modules/battery
+	click-right = exec xfce4-power-manager -c
+	click-left = exec xfce4-power-manager -c
 	interval = 1
 
 [module/volume]
 	type = internal/volume
 
-	format-volume = <label-volume>
+	format-volume =  <label-volume>%
 	label-volume = %percentage%
 	label-volume-foreground = ${colors.text}
 
-	format-muted-prefix = "M "
+	format-muted-prefix = " "
 	format-muted-foreground = ${colors.text}
 
 	master-mixer = Master
@@ -154,7 +167,7 @@
 	interval = .10
 	label = %output%
 	exec = ~/.config/polybar/modules/pavolume.sh
-	click-right = exec pavucontrol
+	click-right = pavucontrol
 	click-left = ~/.config/polybar/modules/pavolume.sh --togmute
 	scroll-up = ~/.config/polybar/modules/pavolume.sh --up
 	scroll-down = ~/.config/polybar/modules/pavolume.sh --down
@@ -207,6 +220,9 @@
 	label-disconnected = 
 	label-disconnected-foreground = ${colors.foreground}
 
+	click-right = exec nm-connection-editor
+	click-left = exec nm-connection-editor
+
 [module/keyboard]
 	type = custom/script
 	exec = ~/.config/polybar/modules/keyboard
@@ -219,8 +235,8 @@
 	label = %output%
 	exec = "echo "
 	interval = 10000
-	click-right = ~/.config/polybar/modules/i3lock.sh
-	click-left = ~/.config/polybar/modules/i3lock.sh
+	click-right = ~/.config/i3/scripts/i3lock.sh
+	click-left = ~/.config/i3/scripts/i3lock.sh
 
 [module/backlight]
 	type = internal/backlight

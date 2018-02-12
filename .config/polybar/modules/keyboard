@@ -1,4 +1,4 @@
-#!/bin/perl
+#!/usr/bin/perl
 
 use strict;
 use warnings;
@@ -27,3 +27,4 @@ else{
 
 
 print "\x{f11c} [$status]"
+

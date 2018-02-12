@@ -6,26 +6,42 @@ exec_always xset fp+ /usr/share/fonts/envypn
 exec_always xset fp rehash
 
 floating_modifier $mod
-
-set $black	#000000
-set $blue		#00ADEF
-set $dBlue	#00688E
-set $white	#FFFFFF
-set $red 		#EF0036
-set $lGray	#AAAAAA
-set $mGray	#777777
-set $dGray	#333333
-
-gaps inner 45
+gaps inner 15
+#smart_gaps on
 #smart_borders on
 
-# class										border	bg			text		indic.	child border
-client.focused						$dGray	$dGray	$black	$blue		$blue
-client.focused_inactive		$dGray	$dGray	$black	$dGray	$dGray
-client.unfocused					$dGray	$dGray	$black	$dGray	$dGray
-client.urgent							$dGray	$dGray	$black	$dGray	$dGray
+#set $black	#000000
+#set $blue	#00ADEF
+#set $dBlue	#00688E
+#set $white	#FFFFFF
+#set $red 	#EF0036
+#set $lGray	#AAAAAA
+#set $mGray	#777777
+#set $dGray	#333333
 
-font pango:ypn envypn,FontAwesome 11
+# class											border	bg			text		indic.	child border
+# client.focused						$dGray	$dGray	$black	$blue		$blue
+# client.focused_inactive		$dGray	$dGray	$black	$dGray	$dGray
+# client.unfocused					$dGray	$dGray	$black	$dGray	$dGray
+# client.urgent							$dGray	$dGray	$black	$dGray	$dGray
+
+# Set colors from Xresources
+# Change 'color7' and 'color2' to whatever colors you want i3 to use 
+# from the generated scheme.
+# NOTE: The '#f0f0f0' in the lines below is the color i3 will use if
+# it fails to get colors from Xresources.
+set_from_resource $fg i3wm.color7 #f0f0f0
+set_from_resource $bg i3wm.color2 #f0f0f0
+
+# class                 border  backgr. text indicator child_border
+client.focused          $bg     $bg     $fg  $fg       $fg
+client.focused_inactive $bg     $bg     $fg  $bg       $bg
+client.unfocused        $bg     $bg     $fg  $bg       $bg
+client.urgent           $bg     $bg     $fg  $bg       $bg
+client.placeholder      $bg     $bg     $fg  $bg       $bg
+client.background       $bg
+
+font pango: envypn,FontAwesome 11
 
 # change focus
 bindsym $mod+j focus left
@@ -64,13 +80,21 @@ bindsym $mod+$alt+space floating toggle
 bindsym $mod+shift+s sticky toggle
 
 # lock screen
-bindsym $mod+shift+l exec ~/.config/polybar/modules/i3lock.sh
+bindsym $mod+shift+l exec ~/.config/i3/scripts/i3lock.sh
 
 # change focus between tiling / floating windows
 bindsym $mod+space focus mode_toggle
 
 #terminal
 bindsym $mod+Return exec urxvt
+
+## quick terminal
+exec --no-startup-id urxvt -name metask
+for_window [instance="metask"] floating enable;
+for_window [instance="metask"] move scratchpad; [instance="metask"] scratchpad show; move position -1px -1px; resize set 1922 500; move scratchpad
+bindsym $mod+$alt+Return [instance="metask"] scratchpad show
+
+# bindsym $mod+$alt+Return exec ~/.config/i3/scripts/urxvt_quake.sh
 
 #assign workspaces to screens
 # move workspace to another screen
@@ -107,13 +131,15 @@ bindsym $mod+$alt+r exec xrdb ~/.Xresources; restart
 bindsym $mod+$alt+shift+e exec "i3-nagbar -t warning -m 'Really exit?' -b 'Yes, exit i3' 'i3-msg exit'"
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec ~/.config/polybar/modules/pavolume.sh --up 			# increase sound volume
-bindsym XF86AudioLowerVolume exec ~/.config/polybar/modules/pavolume.sh --down 		# decrease sound volume
-bindsym XF86AudioMute				 exec ~/.config/polybar/modules/pavolume.sh --togmute # mute sound
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume 0 +5% #increase sound volume
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume 0 -5% #decrease sound volume
+bindsym XF86AudioMute 			 exec pactl set-sink-mute   0 toggle # mute sound
 
 # Sreen brightness controls
-bindsym XF86MonBrightnessUp exec xbacklight -inc 10 # increase screen brightness
-bindsym XF86MonBrightnessDown exec xbacklight -dec 10 # decrease screen brightness
+# bindsym XF86MonBrightnessUp exec xbacklight -inc 10 # increase screen brightness
+# bindsym XF86MonBrightnessDown exec xbacklight -dec 10 # decrease screen brightness
+bindsym XF86MonBrightnessUp exec light -A 5 # increase screen brightness
+bindsym XF86MonBrightnessDown exec light -U 5 # decrease screen brightness
 
 #Toggle keyboard
 #bindsym $mod+$alt+i exec "xinput set-int-prop 17 'Device Enabled' 8 0"
@@ -129,7 +155,7 @@ bindsym $mod+$alt+d exec xrdb -load ~/.Xresources;
 
 
 # resize window (you can also use the mouse for that)
-set $mode_resize Resize: [1] 426x240 [2] 640x360 [3] 854x480 
+set $mode_resize Resize: [1] 426x240 [2] 640x360 [3] 854x480 [4] 760x900
 bindsym $mod+r mode "$mode_resize"
 mode "$mode_resize" {
 	bindsym $alt+j resize shrink width 1 px or 0 ppt
@@ -165,6 +191,7 @@ mode "$mode_resize" {
 	bindsym 1 resize set 426 240
 	bindsym 2 resize set 640 360
 	bindsym 3 resize set 854 480
+	bindsym 4 resize set 760 900
 
 	# back to normal: Enter or Escape
 	bindsym Return mode "default"
@@ -201,21 +228,22 @@ mode "$mode_launcher" {
 	bindsym Return mode "default"
 }
 
-# startup appsn it. Then suddenly chomp...
-########################
-exec xrdb -load ~/.Xresources; 
 
-exec_always --no-startup-id nitrogen --set-zoom-fill /home/safturento/Dropbox/Photos/Wallpapers/Tri-Monitor/agCqv1G.jpg
-exec_always --no-startup-id killall -q compton; compton --config ~/.config/.compton.conf -b
-exec_always --no-startup-id ~/.config/polybar/launch.sh
-exec --no-startup-id dropbox-cli start
+
+exec xrdb -load ~/.Xresources; 
+exec_always --no-startup-id ~/.config/i3/scripts/scheme.sh
+exec --no-startup-id xfce4-power-manager
+exec --no-startup-id ~/.config/i3/scripts/xautolock.sh
+exec --no-startup-id dropbox start
 exec --no-startup-id xflux
+exec --no-startup-id syndaemon -i .2 -t -K -d
+
 
 # i3-gaps config 
 ########################
 # disables window titlebars
 for_window [class="^.*"] border pixel 1
-#for_window [window_role="pop-up"] floating enable
+for_window [window_role="pop-up"] floating enable
 for_window [window_role="pop-bubble"] floating enable
 for_window [window_role="task_dialog"] floating enable
 for_window [window_role="Preferences"] floating enable

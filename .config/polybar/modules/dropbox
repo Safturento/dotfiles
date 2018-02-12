@@ -5,7 +5,7 @@ use warnings;
 use open ":std", ":encoding(UTF-8)";
 use Term::ANSIColor;
 
-my $status = `dropbox-cli status`;
+my $status = `dropbox status`;
 
 if 		($status =~ m/Dropbox/)	 { print "!\x{f16b}"; } # not started
 elsif ($status =~ m/Starting/) { print "\x{f141}"; }	# starting
