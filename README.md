@@ -7,7 +7,7 @@ sudo apt install git autoconf xutils-dev xcb libxcb1-dev libxcb-keysyms1-dev lib
 
 ## Other stuff
 ```
-sudo apt install htop neofetch w3m w3m-img rofi rxvt-unicode fonts-font-awesome thunar i3lock scrot nitrogen light dropbox
+sudo apt install htop neofetch w3m w3m-img rofi rxvt-unicode fonts-font-awesome thunar i3lock scrot nitrogen light dropbox dunst
 
 ## i3-gaps
 https://github.com/Airblader/i3/wiki/Compiling-&-Installing
