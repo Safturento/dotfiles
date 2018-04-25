@@ -15,7 +15,7 @@ close(ACPI);
 if ($acpi =~ /: (\w+), (\d+)%, (\d+:\d+):\d+ \w+/){
 	my $status = $1;
 	my $percent = $2;
-	my $output = "$percent%";
+	my $output = "$percent";
 	my $icon;
 
 	if ($status eq 'Charging'){ $icon = "\x{f1e6}"}
@@ -34,6 +34,6 @@ if ($acpi =~ /: (\w+), (\d+)%, (\d+:\d+):\d+ \w+/){
 	}
 
 	print "$icon $output\n";
-}else { print "\x{f1e6} 100%"; }
+}else { print "\x{f1e6} 100"; }
 
 exit(0);

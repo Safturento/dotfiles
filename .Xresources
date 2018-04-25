@@ -8,7 +8,8 @@
 ! For comments use "!"
 
 #define termfont      -ypn-envypn-Medium-R-Normal--15-150-75-75-C-90-ISO8859-1
-*font:           	  	termfont
+!#define termfont      :xft:scientifica:size=11
+*font:           	  termfont
 URxvt*boldFont:       termfont
 URxvt*italicFont:     termfont
 URxvt*boldItalicFont: termfont

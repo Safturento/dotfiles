@@ -2,12 +2,15 @@
 
 ## Libaries
 ```
-sudo apt install git autoconf xutils-dev xcb libxcb1-dev libxcb-keysyms1-dev libpango1.0-dev libxcb-util0-dev libxcb-icccm4-dev libyajl-dev libstartup-notification0-dev libxcb-randr0-dev libev-dev libxcb-cursor-dev libxcb-composite0 libxcb-xinerama0-dev libxcb-xkb-dev libxkbcommon-dev libxkbcommon-x11-dev autoconf libxcb-xrm0 libxcb-xrm-dev automake cmake cmake-data libcairo2-dev libxcb-ewmh-dev libxcb-image0-dev pkg-config python-xcbgen xcb-proto libasound2-dev libmpdclient-dev libiw-dev libcurl4-openssl-dev acpi clang
+sudo apt install git autoconf xutils-dev xcb libxcb1-dev libxcb-keysyms1-dev libpango1.0-dev libxcb-util0-dev libxcb-icccm4-dev libyajl-dev libstartup-notification0-dev libxcb-randr0-dev libev-dev libxcb-cursor-dev libxcb-composite0 libxcb-xinerama0-dev libxcb-xkb-dev libxkbcommon-dev libxkbcommon-x11-dev autoconf libxcb-xrm0 libxcb-xrm-dev automake cmake cmake-data libcairo2-dev libxcb-ewmh-dev libxcb-image0-dev pkg-config python-xcbgen xcb-proto libasound2-dev libmpdclient-dev libiw-dev libcurl4-openssl-dev acpi clang python3-tk
 ```
+
+https://github.com/Airblader/xcb-util-xrm
 
 ## Other stuff
 ```
-sudo apt install htop neofetch w3m w3m-img rofi rxvt-unicode fonts-font-awesome thunar i3lock scrot nitrogen light dropbox dunst
+sudo apt install htop neofetch w3m w3m-img rofi rxvt-unicode fonts-font-awesome thunar i3lock scrot nitrogen light dropbox dunst tmux tmuxinator
+```
 
 ## i3-gaps
 https://github.com/Airblader/i3/wiki/Compiling-&-Installing
@@ -28,7 +31,6 @@ mkdir -p build && cd build/
 ../configure --prefix=/usr --sysconfdir=/etc --disable-sanitizers
 make
 sudo make install
-
 ```
 
 ## polybar
@@ -42,13 +44,19 @@ sudo make install
 ```
 
 ## fonts
-Download envypn from tar.gz here
+### Enabling bitmap fonts
+```
+cd /etc/fonts/conf.d/
+sudo rm /etc/fonts/conf.d/10*  
+sudo rm 70-no-bitmaps.conf 
+sudo ln -s ../conf.avail/70-yes-bitmaps.conf .
+sudo dpkg-reconfigure fontconfig
+```
+
+### bitmap fonts
+https://github.com/Tecate/bitmap-fonts
+https://github.com/NerdyPepper/scientifica
 https://aur.archlinux.org/packages/envypn-font/
-```
-sudo rm /etc/fonts/conf.d/70-no-bitmaps.conf
-sudo ln /etc/fonts/conf.avail/70-yes-bitmaps.conf /etc/fonts/conf.d/
-sudo rm /etc/fonts/conf.d/10-scale-bitmap-fonts.conf
-```
 
 ## compton
 ```
@@ -56,7 +64,6 @@ sudo apt-add-repository ppa:richardgv/compton
 sudo apt-get update
 sudo apt-get install compton
 ```
-
 
 ## sublime-text-dev
 https://www.sublimetext.com/docs/3/linux_repositories.html
@@ -85,17 +92,22 @@ sudo make
 sudo make install
 ```
 
-# paper icon theme https://snwh.org/paper/download
+## paper icon theme https://snwh.org/paper/download
 ```
 sudo add-apt-repository ppa:snwh/
 sudo apt update
 sudo apt install paper-icon-theme paper-cursor-theme paper-gtk-theme
 ```
 
-# light (backlight utility)
+## light (backlight utility)
 ```
 git clone https://github.com/haikarainen/light
 apt install help2man
 sudo make
 sudo make install
 ```
+
+## i3lock-color
+git clone https://github.com/PandorasFox/i3lock-color
+cd i3lock-color
+autoreconf -i && ./configure && make

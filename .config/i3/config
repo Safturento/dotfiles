@@ -3,6 +3,8 @@ set $alt Mod1
 
 exec_always setxkbmap -option caps:super #make capslock also a super
 exec_always xset fp+ /usr/share/fonts/envypn
+exec_always xset fp+ /usr/share/fonts/bitmap
+exec_always xset fp+ ~/Github/scientifica/regular
 exec_always xset fp rehash
 
 floating_modifier $mod
@@ -20,10 +22,10 @@ gaps inner 15
 #set $dGray	#333333
 
 # class											border	bg			text		indic.	child border
-# client.focused						$dGray	$dGray	$black	$blue		$blue
-# client.focused_inactive		$dGray	$dGray	$black	$dGray	$dGray
-# client.unfocused					$dGray	$dGray	$black	$dGray	$dGray
-# client.urgent							$dGray	$dGray	$black	$dGray	$dGray
+# client.focused								$dGray	$dGray		$black		$blue	$blue
+# client.focused_inactive						$dGray	$dGray		$black		$dGray	$dGray
+# client.unfocused								$dGray	$dGray		$black		$dGray	$dGray
+# client.urgent									$dGray	$dGray		$black		$dGray	$dGray
 
 # Set colors from Xresources
 # Change 'color7' and 'color2' to whatever colors you want i3 to use 
@@ -31,7 +33,7 @@ gaps inner 15
 # NOTE: The '#f0f0f0' in the lines below is the color i3 will use if
 # it fails to get colors from Xresources.
 set_from_resource $fg i3wm.color7 #f0f0f0
-set_from_resource $bg i3wm.color2 #f0f0f0
+set_from_resource $bg i3wm.color3 #f0f0f0
 
 # class                 border  backgr. text indicator child_border
 client.focused          $bg     $bg     $fg  $fg       $fg
@@ -87,14 +89,6 @@ bindsym $mod+space focus mode_toggle
 
 #terminal
 bindsym $mod+Return exec urxvt
-
-## quick terminal
-exec --no-startup-id urxvt -name quake
-for_window [instance="quake"] floating enable;
-for_window [instance="quake"] move scratchpad; [instance="quake"] scratchpad show; move position -1px -1px; resize set 1922 500; move scratchpad
-bindsym $mod+$alt+Return [instance="quake"] scratchpad show
-
-# bindsym $mod+$alt+Return exec ~/.config/i3/scripts/urxvt_quake.sh
 
 #assign workspaces to screens
 # move workspace to another screen
@@ -152,7 +146,6 @@ bindsym $mod+shift+q kill
 #bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
 bindsym $mod+d exec --no-startup-id rofi -show run -config ~/.Xresources
 bindsym $mod+$alt+d exec xrdb -load ~/.Xresources; 
-
 
 # resize window (you can also use the mouse for that)
 set $mode_resize Resize: [1] 426x240 [2] 640x360 [3] 854x480 [4] 760x900
@@ -228,8 +221,6 @@ mode "$mode_launcher" {
 	bindsym Return mode "default"
 }
 
-
-
 exec xrdb -load ~/.Xresources; 
 exec_always --no-startup-id ~/.config/i3/scripts/scheme.sh
 exec --no-startup-id xfce4-power-manager
@@ -238,6 +229,20 @@ exec --no-startup-id dropbox start
 exec --no-startup-id xflux
 exec --no-startup-id syndaemon -i .2 -t -K -d
 
+## quake style terminal launched into a custom tmux session
+exec urxvt -name quake -e $SHELL -c 'tmuxinator start quake; $SHELL -i' &
+for_window [instance="quake"] floating enable;
+for_window [instance="quake"] move scratchpad; [instance="quake"] scratchpad show; move position 15px 65px; resize set 1890 350; move scratchpad
+bindsym $mod+$alt+Return [instance="quake"] scratchpad show
+
+# launch an jupyter notebook server
+exec tmuxinator start jupyter
+
+bar {
+	height 50
+	mode dock
+	position top
+}
 
 # i3-gaps config 
 ########################

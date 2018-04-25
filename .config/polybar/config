@@ -12,27 +12,31 @@
 
 [colors]
 	dark   = ${xrdb:color0}
-	medium = ${xrdb:color2}
+	medium = ${xrdb:color3}
 	light  = ${xrdb:color7}
 	active = ${xrdb:color4}
 	alert  = ${xrdb:color1}
 	foreground = ${colors.light}
+	;background = #000000ff
 	background = ${colors.dark}
 	text = ${colors.light}
-	activeText = ${colors.active}
+	activeText = ${colors.dark}
 
 [bar/main]
 	monitor= ${env:MONITOR:LVDS-1}
-	width = 100%
+	width = 1892
 	height = 35
 
 	bottom = false
 
-	offset-y = 0
-	offset-x = 0
+	offset-y = 15
+	offset-x = 14
 	fixed-center = true
+	override-redirect = true
+	wm-restack = i3
 
-	background = ${colors.background}
+
+	background = #00ffffff ;${colors.background}
 	foreground = ${colors.foreground}
 
 	line-size  = 0
@@ -43,6 +47,7 @@
 	;   border-{left,top,right,bottom}-size
 	;   border-{left,top,right,bottom}-color
 	border-size = 0
+	border-color = ${colors.medium}
 	;	border-color = ${colors.active}
 	radius = 0
 
@@ -50,13 +55,13 @@
 	; Individual side values can be defined using:
 	;   padding-{left,right}
 	padding-left  = 0
-	padding-right = 2
+	padding-right = 0
 
 	; Number of spaces to add before/after each module
 	; Individual side values can be defined using:
 	;   module-margin-{left,right}
-	module-margin-left  = 1
-	module-margin-right = 1
+	module-margin-left  = 0
+	module-margin-right = 
 
 	; Fonts are defined using <font-name>;<vertical-offset>
 	; Font names are specified using a fontconfig pattern.
@@ -71,10 +76,7 @@
 
 	modules-left   = i3
 	modules-center = date
-	modules-right  = volume battery wlan backlight keyboard dropbox i3lock
-
-	;wm-restack = i3
-	;override-redirect = true
+	modules-right  = volume battery wlan dropbox i3lock
 
 
 	; Enable support for inter-process messaging
@@ -107,24 +109,28 @@
 	index-sort = true
 	wrapping-scroll = false
 	fuzzy-match = true
+	enable-scroll = true
+	enable-click=true
 
 	; Only show workspaces on the same output as the bar
 	pin-workspaces = false
 
 	label-mode-padding = 2
 	label-mode-foreground = ${colors.text}
-	label-mode-background = ${colors.dark}
+	label-mode-background = ${colors.background}
 
 	; focused = Active workspace on focused monitor
 	label-focused = %icon%
 	label-focused-background = ${colors.active}
-	label-focused-foreground = ${colors.background}
+	label-focused-foreground = ${colors.activeText}
 ;	label-focused-underline = ${colors.active}
 	label-focused-padding = 2
 
 	; unfocused = Inactive workspace on any monitor
 	label-unfocused = %icon%
 	label-unfocused-padding = 2
+	label-unfocused-background = ${colors.background}
+	label-unfocused-foreground = ${colors.text}
 
 	; visible = Active workspace on unfocused monitor
 	label-visible = %icon%
@@ -135,12 +141,18 @@
 	; urgent = Workspace with urgency hint set
 	label-urgent = %icon%
 	label-urgent-background = ${colors.alert}
+	label-urgent-foreground = ${colors.activeText}
 	label-urgent-padding = 2
 
 [module/dropbox]
 	type = custom/script
 	exec = ~/.config/polybar/modules/dropbox
 	interval=2
+
+
+	label-foreground = ${colors.text}
+	label-background = ${colors.background}
+	label-padding = 1
 
 [module/battery]
 	type = custom/script
@@ -149,15 +161,27 @@
 	click-left = exec xfce4-power-manager -c
 	interval = 1
 
+	label-foreground = ${colors.text}
+	label-background = ${colors.background}
+	label-padding = 1
+
 [module/volume]
 	type = internal/alsa
 
-	format-volume =  <label-volume>%
-	label-volume = %percentage%
+	format-volume = <label-volume>
+	format-volume-padding = 0
+	
+	label-volume = " %percentage%"
 	label-volume-foreground = ${colors.text}
-
-	format-muted-prefix = " "
-	format-muted-foreground = ${colors.text}
+	label-volume-background = ${colors.background}
+	label-volume-padding-left = 2
+	label-volume-padding-right = 1
+	
+	label-muted = " %percentage%"
+	label-muted-foreground = ${colors.text
+	label-muted-background = ${colors.background}
+	label-muted-padding-left = 2
+	label-muted-padding-right = 1
 
 	master-mixer = Master
 	master-soundcard = hw:0
@@ -186,14 +210,21 @@
 	format-prefix-foreground = ${colors.text}
 
 	label = It's %time% on %date% 
+	label-foreground = ${colors.text}
+	label-background = ${colors.background}
+	label-padding = 2
 
 [module/cputemp]
 	type = custom/script
 
-	format = CPU <label>°C
-	label = %output%
+	format = <label>
+	label = CPU %output%°C
 	label-underline = ${colors.text}
+
 	label-foreground = ${colors.text}
+	label-background = ${colors.background}
+	label-padding = 2
+
 	exec = "sensors | grep Physical | gawk '{print $2}' FPAT='[0-9]+'"
 	tail=tr
 	interval=2
@@ -217,8 +248,14 @@
 	format-connected = <label-connected>
 
 	label-connected = %essid%
+	label-connected-foreground = ${colors.text}
+	label-connected-background = ${colors.background}
+	label-connected-padding = 1
+
 	label-disconnected = 
-	label-disconnected-foreground = ${colors.foreground}
+	label-disconnected-foreground = ${colors.text}
+	label-disconnected-background = ${colors.background}
+	label-disconnected-padding = 1
 
 	click-right = exec nm-connection-editor
 	click-left = exec nm-connection-editor
@@ -229,6 +266,10 @@
 	click-right = ~/.config/polybar/modules/keyboard toggle
 	interval = 1
 
+	label-foreground = ${colors.text}
+	label-background = ${colors.background}
+	label-padding = 1
+
 [module/i3lock]
 	type = custom/script
 	format = <label>
@@ -237,6 +278,11 @@
 	interval = 10000
 	click-right = ~/.config/i3/scripts/i3lock.sh
 	click-left = ~/.config/i3/scripts/i3lock.sh
+
+	label-foreground = ${colors.text}
+	label-background = ${colors.background}
+	label-padding = 1
+	label-padding-right = 2
 
 [module/backlight]
 	type = internal/backlight
@@ -249,11 +295,14 @@
 	;   <label> (default)
 	;   <ramp>
 	;   <bar>
-	format = <ramp> <label>
 
-	; Available tokens:
-	;   %percentage% (default)
-	label = %percentage%%
+	format = <ramp> <label>
+	format-foreground = ${colors.text}
+	format-background = ${colors.background}
+	format-padding = 1
+	format-padding-right = 2
+
+	label = %percentage%
 
 	; Only applies if <ramp> is used
 	ramp-0 = 🌕

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+JSON_PATH="$HOME/.config/Google Play Music Desktop Player/json_store/playback.json";
+
+
+function dump(){
+	echo $(cat "${JSON_PATH}")
+}
+
+function get(){
+	echo $(cat "${JSON_PATH}" | jq $1)
+}
+
+for var in "$@"
+do
+	echo $(get $var)
+done
+
+# echo $(get $1)
+# echo $(get ".playing")
+# echo $(get ".song.title")
