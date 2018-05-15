@@ -1,0 +1,30 @@
+/* * { font: 11px envypn; }*/
+* { font: 11px envypn; }
+
+#bar_right, #bar_left, #bar_center { margin-top: 15px; }
+#bar_right  { margin-right: 15px; }
+#bar_left   { margin-left: 15px; }
+
+#bar_right, #bar_left, #bar_center { background: none; }
+QPushButton, QMenu::item {
+	background: rgb(rgb-xrdb-color0, 80%);
+	color: xrdb-color6;
+}
+QPushButton:hover, QMenu::item:selected, QPushButton[i3visible=true] {
+	background: rgb(rgb-xrdb-color0, 90%);
+	color: xrdb-color4;
+}
+
+/* debugging bar position */
+/*
+#bar_right  { background: #f00; }
+#bar_left   { background: #0f0; }
+#bar_center { background: #00f; }
+*/
+
+/* individual button margins */
+/*
+#bar_right QPushButton { margin-left: 15px; }
+#bar_left QPushButton { margin-right: 15px; }
+#bar_center QPushButton { margin: 0 7px; }
+#I3 QPushButton { margin:0; }

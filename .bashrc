@@ -117,8 +117,10 @@ if ! shopt -oq posix; then
  fi
 
 export PATH="${PATH}:${HOME}/.local/bin/"
+
 cat /home/safturento/.cache/wal/sequences
 
 alias python=python3
 
 export EDITOR='subl'
+

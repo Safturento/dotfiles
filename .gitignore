@@ -23,5 +23,8 @@
 !.config/polybar
 !.config/polybar/*
 !.config/polybar/modules/*
-!.config/tmuxinator
-!.config/tmuxinator/**
+!.tmuxinator
+!.tmuxinator/*
+!.config/stbar
+!.config/stbar/*
+!.config/stbar/modules/*

@@ -4,7 +4,7 @@ set $alt Mod1
 exec_always setxkbmap -option caps:super #make capslock also a super
 exec_always xset fp+ /usr/share/fonts/envypn
 exec_always xset fp+ /usr/share/fonts/bitmap
-exec_always xset fp+ ~/Github/scientifica/regular
+
 exec_always xset fp rehash
 
 floating_modifier $mod
@@ -125,9 +125,9 @@ bindsym $mod+$alt+r exec xrdb ~/.Xresources; restart
 bindsym $mod+$alt+shift+e exec "i3-nagbar -t warning -m 'Really exit?' -b 'Yes, exit i3' 'i3-msg exit'"
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec pactl set-sink-volume 0 +5% #increase sound volume
-bindsym XF86AudioLowerVolume exec pactl set-sink-volume 0 -5% #decrease sound volume
-bindsym XF86AudioMute 			 exec pactl set-sink-mute   0 toggle # mute sound
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+bindsym XF86AudioMute 		 exec pactl set-sink-mute   @DEFAULT_SINK@ toggle
 
 # Sreen brightness controls
 # bindsym XF86MonBrightnessUp exec xbacklight -inc 10 # increase screen brightness
@@ -238,16 +238,16 @@ bindsym $mod+$alt+Return [instance="quake"] scratchpad show
 # launch an jupyter notebook server
 exec tmuxinator start jupyter
 
-bar {
-	height 50
-	mode dock
-	position top
-}
+# bar {
+# 	height 50
+# 	mode dock
+# 	position top
+# }
 
 # i3-gaps config 
 ########################
 # disables window titlebars
-for_window [class="^.*"] border pixel 1
+for_window [class="^.*"] border pixel 0
 for_window [window_role="pop-up"] floating enable
 for_window [window_role="pop-bubble"] floating enable
 for_window [window_role="task_dialog"] floating enable

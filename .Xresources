@@ -7,8 +7,7 @@
 ! config can be added there or also here below.
 ! For comments use "!"
 
-#define termfont      -ypn-envypn-Medium-R-Normal--15-150-75-75-C-90-ISO8859-1
-!#define termfont      :xft:scientifica:size=11
+#define termfont      xft:envypn:pixelsize=11
 *font:           	  termfont
 URxvt*boldFont:       termfont
 URxvt*italicFont:     termfont

@@ -1,24 +1,35 @@
 #!/bin/bash
 
 # Restart compton
-killall -q compton; compton --config ~/.config/.compton.conf -b
+killall -q compton;
+compton --config ~/.config/.compton.conf -b
 
 # Set random wallpaper and update color scheme
-~/.local/bin/wal -i "/home/safturento/Dropbox/Photos/Wallpapers/caxUR.jpg" --backend colorthief
+~/.local/bin/wal -i "/home/safturento/Dropbox/Photos/Wallpapers/Aenami/alena-aenami-quiet-1px.jpg" --backend colorthief
 
 # Update sublime theme to match wal
 ~/.config/sublime-text-3/Packages/wal/base16-wal-tmTheme.sh > ~/.config/sublime-text-3/Packages/wal/base16-wal.tmTheme &
 
-# Terminate already running bar instances
+
+#################################
+# # Terminate already running bar instances
 killall -q polybar
 
-# Wait until the processes have been shut down
-while pgrep -x polybar > /dev/null;
+# # Wait until the processes have been shut down
+# while pgrep -x polybar > /dev/null;
+# 	do sleep .5;
+# done
+
+# polybar main &
+# echo "Bars launched..."
+#################################
+
+pkill -f stbar; 
+while pgrep -x stbar > /dev/null;
 	do sleep .5;
 done
 
-polybar main &
-echo "Bars launched..."
+~/.local/bin/stbar
 
 source "${HOME}/.cache/wal/colors.sh"
 
