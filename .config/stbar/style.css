@@ -1,19 +1,24 @@
 /* * { font: 11px envypn; }*/
 * { font: 11px envypn; }
 
-#bar_right, #bar_left, #bar_center { margin-top: 15px; }
-#bar_right  { margin-right: 15px; }
-#bar_left   { margin-left: 15px; }
+#bar_right, #bar_left, #bar_center { margin-top: 30px; }
+#bar_right  { margin-right: 30px; }
+#bar_left   { margin-left: 30px; }
 
-#bar_right, #bar_left, #bar_center { background: none; }
+#bar_right, #bar_left, #bar_center {
+	background: none;
+}
+
 QPushButton, QMenu::item {
 	background: rgb(rgb-xrdb-color0, 80%);
 	color: xrdb-color6;
 }
+
 QPushButton:hover, QMenu::item:selected, QPushButton[i3visible=true] {
-	background: rgb(rgb-xrdb-color0, 90%);
-	color: xrdb-color4;
+	background: rgb(rgb-xrdb-color3, 90%);
+	color: xrdb-color7;
 }
+
 
 /* debugging bar position */
 /*

@@ -122,5 +122,7 @@ cat /home/safturento/.cache/wal/sequences
 
 alias python=python3
 
+export PYTHONPATH=/usr/bin/python3
+
 export EDITOR='subl'
 

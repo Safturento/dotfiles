@@ -5,40 +5,26 @@ killall -q compton;
 compton --config ~/.config/.compton.conf -b
 
 # Set random wallpaper and update color scheme
-~/.local/bin/wal -i "/home/safturento/Dropbox/Photos/Wallpapers/Aenami/alena-aenami-quiet-1px.jpg" --backend colorthief
+# ~/.local/bin/wal -i "/home/safturento/Dropbox/Photos/Wallpapers/Cyberpunk/32 - 71ZKyaT.jpg" --backend colorthief -b '#161616' 
+~/.local/bin/wal -R
 
 # Update sublime theme to match wal
-~/.config/sublime-text-3/Packages/wal/base16-wal-tmTheme.sh > ~/.config/sublime-text-3/Packages/wal/base16-wal.tmTheme &
+python3 ~/Github/sublime-wal/scheme.py
 
+source "${HOME}/.cache/wal/colors.sh"
 
-#################################
-# # Terminate already running bar instances
-killall -q polybar
-
-# # Wait until the processes have been shut down
-# while pgrep -x polybar > /dev/null;
-# 	do sleep .5;
-# done
-
-# polybar main &
-# echo "Bars launched..."
-#################################
-
+# restart bar
 pkill -f stbar; 
 while pgrep -x stbar > /dev/null;
 	do sleep .5;
 done
-
 ~/.local/bin/stbar
 
-source "${HOME}/.cache/wal/colors.sh"
-
+# restart dunst
 pkill dunst
-
 while pgrep -x dunst > /dev/null;
 	do sleep .5;
 done
-
 dunst \
 	-fn "envypn 11" \
 	-lb "${color0:=#FF0000}" \

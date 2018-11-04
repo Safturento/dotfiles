@@ -1,5 +1,10 @@
-{
-	"Clock": {
-		"format": "It's %H:%M on %a %b %d"
+{	
+	"modules":{
+		"left": [],
+		"center": ["I3", "Sound", "Battery", "Wifi", "Dropbox", "Clock", "Lock"],
+		"right": []
+	},
+	"Lock": {
+		"exec": "~/.config/i3/scripts/i3lock.sh"
 	}
 }

@@ -7,7 +7,7 @@
 ! config can be added there or also here below.
 ! For comments use "!"
 
-#define termfont      xft:envypn:pixelsize=11
+#define termfont      envypn
 *font:           	  termfont
 URxvt*boldFont:       termfont
 URxvt*italicFont:     termfont
@@ -19,7 +19,7 @@ URxvt*lineSpace: 0
 *allow_bold: false
 
 URxvt*internalBorder: 50
-URxvt*url-launcher: /usr/bin/google-chrome-stable
+URxvt*url-launcher: /usr/bin/firefox
 
 rofi.font: envypn 11
 rofi.width: 20
