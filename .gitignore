@@ -23,6 +23,7 @@
 !.config/polybar
 !.config/polybar/*
 !.config/polybar/modules/*
+!.tmux.conf
 !.tmuxinator
 !.tmuxinator/*
 !.config/stbar
