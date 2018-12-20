@@ -14,7 +14,7 @@
 	dark   = ${xrdb:color0}
 	medium = ${xrdb:color3}
 	light  = ${xrdb:color7}
-	active = ${xrdb:color4}
+	active = ${xrdb:color3}
 	alert  = ${xrdb:color1}
 	foreground = ${colors.light}
 	;background = #000000ff
@@ -22,19 +22,19 @@
 	text = ${colors.light}
 	activeText = ${colors.dark}
 
-[bar/main]
-	monitor= ${env:MONITOR:LVDS-1}
+[bar/base]
+	monitor = ${env:MONITOR:}
 	bottom = false
 
-	height = 34
+	height = 24
 	width = 100%
 	
 	;width = 1892
 	;offset-y = 15
 	;offset-x = 14
 	;fixed-center = true
-	;override-redirect = true
-	;wm-restack = i3
+	override-redirect = true
+	wm-restack = i3
 
 	background = #00ffffff ;${colors.background}
 	foreground = ${colors.foreground}
@@ -46,7 +46,7 @@
 	; Individual side values can be defined using:
 	;   border-{left,top,right,bottom}-size
 	;   border-{left,top,right,bottom}-color
-	border-size = 15
+	border-size = 0
 	border-bottom-size=0
 	border-color = $00ffffff ;${colors.medium}
 	;	border-color = ${colors.active}
@@ -77,8 +77,7 @@
 
 	modules-left   = i3
 	modules-center = date
-	modules-right  = volume battery wlan i3lock
-
+	modules-right  = volume i3lock
 
 	; Enable support for inter-process messaging
 	; See the Messaging wiki page for more details.
@@ -92,10 +91,33 @@
 	
 	scroll-up    = i3wm-wsnext
 	scroll-down  = i3wm-wsprev
-	
-	double-click-left   =
-	double-click-middle =
-	double-click-right  =
+
+[bar/laptop]
+	inherit = bar/base
+	monitor = ${env:MONITOR:LVDS-1}
+	modules-right  = volume battery wlan i3lock
+
+[bar/main]
+	inherit = bar/base
+	monitor = ${env:MONITOR:DP-3}
+	modules-right = 
+	modules-center = 
+
+[bar/left]
+	inherit = bar/base
+	monitor = ${env:MONITOR:DVI-I-1}
+
+	modules-left = i3
+	modules-center = 
+	modules-right = 
+
+[bar/right]
+	inherit = bar/left
+	monitor = ${env:MONITOR:DP-2}
+
+	modules-left = i3
+	modules-center = 
+	modules-right = 
 
 [module/i3]
 	type = internal/i3
@@ -114,9 +136,9 @@
 	enable-click=true
 
 	; Only show workspaces on the same output as the bar
-	pin-workspaces = false
+	pin-workspaces = true
 
-	label-mode-padding = 2
+	label-mode-padding = 1
 	label-mode-foreground = ${colors.text}
 	label-mode-background = ${colors.background}
 
@@ -125,17 +147,18 @@
 	label-focused-background = ${colors.active}
 	label-focused-foreground = ${colors.activeText}
 ;	label-focused-underline = ${colors.active}
-	label-focused-padding = 2
+	label-focused-padding = 1
 
 	; unfocused = Inactive workspace on any monitor
 	label-unfocused = %icon%
-	label-unfocused-padding = 2
+	label-unfocused-padding = 1
 	label-unfocused-background = ${colors.background}
 	label-unfocused-foreground = ${colors.text}
 
 	; visible = Active workspace on unfocused monitor
 	label-visible = %icon%
-	label-visible-background = ${colors.background}
+	label-visible-background = ${colors.active}
+	label-visible-foreground = ${colors.activeText}
 ;	label-visible-underline = ${self.active}
 	label-visible-padding = ${self.label-focused-padding}
 
@@ -143,7 +166,7 @@
 	label-urgent = %icon%
 	label-urgent-background = ${colors.alert}
 	label-urgent-foreground = ${colors.activeText}
-	label-urgent-padding = 2
+	label-urgent-padding = 1
 
 [module/dropbox]
 	type = custom/script
@@ -210,7 +233,7 @@
 	format-prefix = 
 	format-prefix-foreground = ${colors.text}
 
-	label = It's %time% on %date% 
+	label = "It's %time% on %date%"
 	label-foreground = ${colors.text}
 	label-background = ${colors.background}
 	label-padding = 2

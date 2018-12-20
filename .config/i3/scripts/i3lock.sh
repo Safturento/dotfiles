@@ -23,27 +23,28 @@ BLURTYPE="0x5" # 7.52s
 # Get the screenshot, add the blur and lock the screen with it
 $SCREENSHOT
 # convert $IMAGE -blur $BLURTYPE $IMAGE
-convert $IMAGE -scale 20% -scale 500% $IMAGE
+convert $IMAGE -scale 10% -scale 1000% $IMAGE
 [[ -f $1 ]] && convert $IMAGE $1 -gravity center -composite -matte $IMAGE
 
 A=ff
+H=00
 # Lock it up
 i3lock -n -i $IMAGE \
-	--insidecolor=$color0$A \
+	--insidecolor=$color0$H \
 	--ringcolor=$color1$A \
 	--ringvercolor=$color3$A \
 	--insidevercolor=$color3$A \
 	--ringwrongcolor=$color5$A \
 	--insidewrongcolor=$color5$A \
-	--keyhlcolor=$color0$A \
+	--keyhlcolor=$color15$A \
 	--bshlcolor=$color0$A \
 	--separatorcolor=00000000 \
 	--linecolor=00000000 \
-	--ring-width=10 \
-	--radius=20 \
+	--ring-width=20 \
+	--radius=50 \
 	--veriftext="" \
 	--wrongtext="" \
-	--indpos="x+86:y+1003"
+	--indpos="x+100:y+100"
 
 rm $IMAGE
 
