@@ -29,3 +29,5 @@
 !.config/stbar
 !.config/stbar/*
 !.config/stbar/modules/*
+!.config/htop
+!.config/htop/htoprc
