@@ -23,7 +23,7 @@ URxvt*url-launcher: /usr/bin/firefox
 
 rofi.font: envypn 11
 rofi.width: 20
-rofi.lines:20
+rofi.lines:5
 rofi.columns: 1
 rofi.opacity: 80
 rofi.padding: 50
@@ -35,6 +35,7 @@ rofi.ssh-client: ssh
 rofi.ssh-command: {terminal} -e "{ssh-client} {host}"
 rof.sidebar-mode: true
 rofi.tokenize: true
+rofi.modi: drun
 
 rofi.hide-scrollbar: true
 rofi.theme: ~/.cache/wal/colors-rofi-dark.rasi

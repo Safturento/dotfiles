@@ -114,15 +114,17 @@ if ! shopt -oq posix; then
   elif [ -f /etc/bash_completion ]; then
     . /etc/bash_completion
   fi
- fi
+fi
 
-export PATH="${PATH}:${HOME}/.local/bin/"
+export EDITOR='code'
 
-cat /home/safturento/.cache/wal/sequences
+# added by Miniconda3 installer
+export PATH="/home/safturento/conda/bin:$PATH"
 
-alias python=python3
+export PATH="/home/safturento/bin:$PATH"
 
-export PYTHONPATH=/usr/bin/python3
+(wal -Rnq &)
 
-export EDITOR='subl'
-
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion

@@ -44,10 +44,11 @@ root: ~/
 
 windows:
   - editor:
-      layout: 00f8,255x16,0,0{169x16,0,0,0,85x16,170,0,1}
+      layout: 1e0f,260x18,0,0{179x18,0,0,0,12x18,180,0,1,67x18,193,0,2}
       # Synchronize all panes of this window, can be enabled before or after the pane commands run.
       # 'before' represents legacy functionality and will be deprecated in a future release, in favour of 'after'
       # synchronize: after
       panes:
-        - 
+        - neofetch
+        - alsamixer
         - htop

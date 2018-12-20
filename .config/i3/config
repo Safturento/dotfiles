@@ -1,40 +1,24 @@
 set $mod Mod4
 set $alt Mod1
 
-exec_always setxkbmap -option caps:super #make capslock also a super
-exec_always xset fp+ /usr/share/fonts/envypn
-exec_always xset fp+ /usr/share/fonts/bitmap
+exec_always --no-startup-id setxkbmap -option caps:super #make capslock also a super
 
-exec_always xset fp rehash
+# Fonts
+exec_always --no-startup-id xset fp+ /usr/share/fonts/envypn
+exec_always --no-startup-id xset fp rehash
+font pango: envypn, FontAwesome 11
 
+exec_always --no-startup-id  ~/.config/i3/scripts/scheme.sh
+
+# Gaps
 floating_modifier $mod
 gaps inner 30
 #smart_gaps on
 #smart_borders on
 
-#set $black	#000000
-#set $blue	#00ADEF
-#set $dBlue	#00688E
-#set $white	#FFFFFF
-#set $red 	#EF0036
-#set $lGray	#AAAAAA
-#set $mGray	#777777
-#set $dGray	#333333
-
-# class											border	bg			text		indic.	child border
-# client.focused								$dGray	$dGray		$black		$blue	$blue
-# client.focused_inactive						$dGray	$dGray		$black		$dGray	$dGray
-# client.unfocused								$dGray	$dGray		$black		$dGray	$dGray
-# client.urgent									$dGray	$dGray		$black		$dGray	$dGray
-
-# Set colors from Xresources
-# Change 'color7' and 'color2' to whatever colors you want i3 to use 
-# from the generated scheme.
-# NOTE: The '#f0f0f0' in the lines below is the color i3 will use if
-# it fails to get colors from Xresources.
-set_from_resource $fg i3wm.color3 #f0f0f0
-set_from_resource $bg i3wm.color0 #f0f0f0
-
+# Colors
+set_from_resource $fg i3wm.color3 #ff0000
+set_from_resource $bg i3wm.color0 #ff0000
 # class                 border  backgr. text indicator child_border
 client.focused          $bg     $bg     $fg  $fg       $fg
 client.focused_inactive $bg     $bg     $fg  $bg       $bg
@@ -42,8 +26,6 @@ client.unfocused        $bg     $bg     $fg  $bg       $bg
 client.urgent           $bg     $bg     $fg  $bg       $bg
 client.placeholder      $bg     $bg     $fg  $bg       $bg
 client.background       $bg
-
-font pango: envypn, FontAwesome 11
 
 # change focus
 bindsym $mod+j focus left
@@ -105,7 +87,6 @@ bindsym $mod+m workspace 6
 bindsym $mod+7 workspace 7
 bindsym $mod+8 workspace 8
 bindsym $mod+9 workspace 9
-bindsym $mod+10 workspace 10
 
 # move focused container to workspace
 bindsym $mod+$alt+q move container to workspace 1
@@ -117,7 +98,6 @@ bindsym $mod+$alt+m move container to workspace 6
 bindsym $mod+$alt+7 move container to workspace 7
 bindsym $mod+$alt+8 move container to workspace 8
 bindsym $mod+$alt+9 move container to workspace 9
-bindsym $mod+$alt+10 move container to workspace 10
 
 # system keybinds
 bindsym $mod+$alt+shift+c reload
@@ -127,7 +107,7 @@ bindsym $mod+$alt+shift+e exec "i3-nagbar -t warning -m 'Really exit?' -b 'Yes, 
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
 bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
-bindsym XF86AudioMute 		 exec pactl set-sink-mute   @DEFAULT_SINK@ toggle
+bindsym XF86AudioMute 		  exec pactl set-sink-mute   @DEFAULT_SINK@ toggle
 
 # Sreen brightness controls
 # bindsym XF86MonBrightnessUp exec xbacklight -inc 10 # increase screen brightness
@@ -144,8 +124,7 @@ bindsym $mod+shift+q kill
 
 # allows searching by desktop names
 #bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
-bindsym $mod+d exec --no-startup-id rofi -show run -config ~/.Xresources
-bindsym $mod+$alt+d exec xrdb -load ~/.Xresources; 
+bindsym $mod+d exec --no-startup-id rofi -show drun -config ~/.Xresources
 
 # resize window (you can also use the mouse for that)
 set $mode_resize Resize: [1] 426x240 [2] 640x360 [3] 854x480 [4] 760x900
@@ -221,23 +200,19 @@ mode "$mode_launcher" {
 	bindsym Return mode "default"
 }
 
-exec xrdb -load ~/.Xresources; 
-exec_always --no-startup-id ~/.config/i3/scripts/scheme.sh
-exec --no-startup-id xfce4-power-manager
-exec --no-startup-id ~/.config/i3/scripts/xautolock.sh
+# exec --no-startup-id xfce4-power-manager
+# exec --no-startup-id ~/.config/i3/scripts/xautolock.sh
+# exec --no-startup-id xflux
 exec --no-startup-id dropbox start
-exec --no-startup-id xflux
 exec --no-startup-id syndaemon -i .2 -t -K -d
 
 ## quake style terminal launched into a custom tmux session
-exec urxvt -name quake -e $SHELL -c 'tmuxinator start quake; $SHELL -i' &
+exec --no-start-upd urxvt -name quake -e $SHELL -c 'tmuxinator start quake; $SHELL -i' &
 for_window [instance="quake"] floating enable;
-for_window [instance="quake"] move scratchpad; [instance="quake"] scratchpad show; move position 15px 65px; resize set 1890 350; move scratchpad
+for_window [instance="quake"] move scratchpad; [instance="quake"] scratchpad show; move position -1px -1px; resize set 1922 350; move scratchpad
 bindsym $mod+$alt+Return [instance="quake"] scratchpad show
 
-# launch an jupyter notebook server
-exec tmuxinator start jupyter
-
+# Empty padding bar
 # bar {
 # 	height 50
 # 	mode dock
@@ -247,7 +222,7 @@ exec tmuxinator start jupyter
 # i3-gaps config 
 ########################
 # disables window titlebars
-for_window [class="^.*"] border pixel 3
+for_window [class="^.*"] border pixel 1
 for_window [window_role="pop-up"] floating enable
 for_window [window_role="pop-bubble"] floating enable
 for_window [window_role="task_dialog"] floating enable
