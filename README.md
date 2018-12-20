@@ -5,11 +5,18 @@
 sudo apt install git autoconf xutils-dev xcb libxcb1-dev libxcb-keysyms1-dev libpango1.0-dev libxcb-util0-dev libxcb-icccm4-dev libyajl-dev libstartup-notification0-dev libxcb-randr0-dev libev-dev libxcb-cursor-dev libxcb-composite0 libxcb-xinerama0-dev libxcb-xkb-dev libxkbcommon-dev libxkbcommon-x11-dev autoconf libxcb-xrm0 libxcb-xrm-dev automake cmake cmake-data libcairo2-dev libxcb-ewmh-dev libxcb-image0-dev pkg-config python-xcbgen xcb-proto libasound2-dev libmpdclient-dev libiw-dev libcurl4-openssl-dev acpi clang python3-tk
 ```
 
-https://github.com/Airblader/xcb-util-xrm
+## xcb-util-xrm
+```
+git clone --recursive https://github.com/Airblader/xcb-util-xrm.git
+cd xcb-util-xrm
+./autogen.sh
+make
+sudo make install
+```
 
 ## Other stuff
 ```
-sudo apt install htop neofetch w3m w3m-img rofi rxvt-unicode fonts-font-awesome thunar i3lock scrot nitrogen light dropbox dunst tmux tmuxinator
+sudo apt install htop neofetch w3m w3m-img rofi rxvt-unicode fonts-font-awesome thunar i3lock scrot nitrogen dunst tmux tmuxinator
 ```
 
 ## i3-gaps
