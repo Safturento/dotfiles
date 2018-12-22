@@ -22,6 +22,9 @@ source "${HOME}/.cache/wal/colors.sh"
 # done
 # stbar
 
+
+~/.config/polybar/launch.sh
+
 # restart dunst
 pkill dunst
 while pgrep -x dunst > /dev/null;

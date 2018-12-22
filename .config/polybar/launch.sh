@@ -10,7 +10,13 @@ while pgrep -x polybar >/dev/null; do sleep 1; done
 while true; do
 	source "/home/safturento/.cache/wal/colors.sh"
 	if [[ $color15 ]]; then
-		polybar main &
+		if [ $HOSTNAME = "safturento" ]; then
+			polybar main &
+			polybar left &
+			polybar right &
+		else
+			polybar laptop
+		fi
 		exit 1
 	fi
 	sleep 0.1
