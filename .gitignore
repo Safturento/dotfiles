@@ -31,3 +31,6 @@
 !.config/stbar/modules/*
 !.config/htop
 !.config/htop/htoprc
+!.config/wal
+!.config/wal/*
+!.config/wal/templates/*

@@ -33,7 +33,7 @@ rofi.glob: true
 rofi.terminal: urxvt
 rofi.ssh-client: ssh
 rofi.ssh-command: {terminal} -e "{ssh-client} {host}"
-rof.sidebar-mode: true
+!rofi.sidebar-mode: true
 rofi.tokenize: true
 rofi.modi: drun
 
