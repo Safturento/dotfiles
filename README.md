@@ -118,3 +118,11 @@ sudo make install
 git clone https://github.com/PandorasFox/i3lock-color
 cd i3lock-color
 autoreconf -i && ./configure && make
+
+## awesome-wm
+```
+sudo apt install lua5.3 liblua5.3-dev luarocks libxcb-xtest0-dev libxdg-basedir-dev gdk-pixbuf2.0-dev libgirepository1.0-dev
+luarocks install lgi
+git clone https://github.com/awesomeWM/awesome
+cd awesome & make
+```
