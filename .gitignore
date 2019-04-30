@@ -44,10 +44,6 @@
 !.config/wal/*
 !.config/wal/templates/*
 
-!.vim
-!.vim/plugged
-!.vim/plugged/*
-
 !.config/awesome
 !.config/awesome/
 !.config/awesome/*
