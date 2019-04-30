@@ -20,7 +20,21 @@
 	;background = #000000ff
 	background = ${colors.dark}
 	text = ${colors.light}
+<<<<<<< HEAD
 	activeText = ${colors.dark}
+=======
+	activeText = ${colors.active}
+
+[bar/main]
+	modules-left   = i3
+	modules-center = date
+	modules-right  = cputemp pavolume dropbox
+
+;	monitor= ${env:MONITOR:DVI-I-1}
+	monitor= DP-2
+	width = 100%
+	height = 30
+>>>>>>> 63414fc787221cefbe4b2ae2b4d4944ff11f4fd5
 
 [bar/base]
 	monitor = ${env:MONITOR:}
@@ -75,9 +89,15 @@
 	font-1 = "unifont:fontformat=truetype:size=8:antialias=false;0"
 	font-2 = "FontAwesome:pixelsize=10;1"
 
+<<<<<<< HEAD
 	modules-left   = i3
 	modules-center = date
 	modules-right  = volume i3lock
+=======
+	;wm-restack = i3
+	;override-redirect = true
+
+>>>>>>> 63414fc787221cefbe4b2ae2b4d4944ff11f4fd5
 
 	; Enable support for inter-process messaging
 	; See the Messaging wiki page for more details.
@@ -127,6 +147,10 @@
 	ws-icon-3 = 4;
 	ws-icon-4 = 5;
 	ws-icon-5 = 6;
+	ws-icon-6 = 7;1
+	ws-icon-7 = 8;2
+	ws-icon-8 = 9;3
+	ws-icon-9 = 10;4
 
 	format = <label-state> <label-mode>
 	index-sort = true

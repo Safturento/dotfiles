@@ -1,7 +1,16 @@
 set $mod Mod4
 set $alt Mod1
 
+<<<<<<< HEAD
 exec_always --no-startup-id setxkbmap -option caps:super #make capslock also a super
+=======
+exec_always setxkbmap -option caps:super #make capslock also a super
+
+# exec xrandr --output DP-4 --left-of DVI-I-1 --auto &
+
+exec_always xset fp+ /usr/share/fonts/envypn
+exec_always xset fp rehash
+>>>>>>> 63414fc787221cefbe4b2ae2b4d4944ff11f4fd5
 
 # Fonts
 exec_always --no-startup-id xset fp+ /usr/share/fonts/envypn
@@ -74,8 +83,8 @@ bindsym $mod+Return exec urxvt
 
 #assign workspaces to screens
 # move workspace to another screen
-bindsym $mod+$alt+1 move workspace to output left
-bindsym $mod+$alt+2 move workspace to output right
+bindsym $mod+$alt+4 move workspace to output left
+bindsym $mod+$alt+6 move workspace to output right
 
 # switch to workspace
 bindsym $mod+q workspace 1
@@ -84,9 +93,16 @@ bindsym $mod+s workspace 3
 bindsym $mod+g workspace 4
 bindsym $mod+e workspace 5
 bindsym $mod+m workspace 6
+<<<<<<< HEAD
 bindsym $mod+7 workspace 7
 bindsym $mod+8 workspace 8
 bindsym $mod+9 workspace 9
+=======
+bindsym $mod+1 workspace 7
+bindsym $mod+2 workspace 8
+bindsym $mod+3 workspace 9
+#bindsym $mod+4 workspace 10
+>>>>>>> 63414fc787221cefbe4b2ae2b4d4944ff11f4fd5
 
 # move focused container to workspace
 bindsym $mod+$alt+q move container to workspace 1
@@ -95,9 +111,16 @@ bindsym $mod+$alt+s move container to workspace 3
 bindsym $mod+$alt+g move container to workspace 4
 bindsym $mod+$alt+e move container to workspace 5
 bindsym $mod+$alt+m move container to workspace 6
+<<<<<<< HEAD
 bindsym $mod+$alt+7 move container to workspace 7
 bindsym $mod+$alt+8 move container to workspace 8
 bindsym $mod+$alt+9 move container to workspace 9
+=======
+bindsym $mod+$alt+1 move container to workspace 7
+bindsym $mod+$alt+2 move container to workspace 8
+bindsym $mod+$alt+3 move container to workspace 9
+# bindsym $mod+$alt+4 move container to workspace 10
+>>>>>>> 63414fc787221cefbe4b2ae2b4d4944ff11f4fd5
 
 # system keybinds
 bindsym $mod+$alt+shift+c reload
@@ -171,35 +194,28 @@ mode "$mode_resize" {
 }
 
 # common app launcher
-set $mode_launcher > Launch: [p]lex [c]hrome [s]ublime-text stea[m] [f]iles [t]witch [y]outube [n]etflix [b]ooks
+set $mode_launcher > Launch: [p]lex [t]witch [y]outube [n]etflix [b]ooks
 bindsym $mod+o mode "$mode_launcher"
 mode "$mode_launcher" {
 	bindsym p exec google-chrome-stable --app=https://app.plex.tv/web/app; mode "default"; 
 	bindsym $mod+p exec google-chrome-stable --app=https://app.plex.tv/web/app; mode "default"; 
-	bindsym t exec google-chrome-stable --app=https://twitch.tv; mode "default"
-	bindsym $mod+t exec google-chrome-stable --app=https://twitch.tv; mode "default"
-	bindsym y exec google-chrome-stable --app=https://youtube.com; mode "default"
-	bindsym $mod+y exec google-chrome-stable --app=https://youtube.com; mode "default"
-	bindsym n exec google-chrome-stable --app=https://netflix.com; mode "default"
-	bindsym $mod+n exec google-chrome-stable --app=https://netflix.com; mode "default"
+
+	bindsym t exec google-chrome-stable --app=https://twitch.tv; mode "default";
+	bindsym $mod+t exec google-chrome-stable --app=https://twitch.tv; mode "default";
+
+	bindsym y exec google-chrome-stable --app=https://youtube.com; mode "default";
+	bindsym $mod+y exec google-chrome-stable --app=https://youtube.com; mode "default";
+
+	bindsym n exec google-chrome-stable --app=https://netflix.com; mode "default";
+	bindsym $mod+n exec google-chrome-stable --app=https://netflix.com; mode "default";
+
 	bindsym b exec google-chrome-stable --app=https://play.google.com/books; mode "default"; 
 	bindsym $mod+b exec google-chrome-stable --app=https://play.google.com/books; mode "default"; 
-	bindsym g exec google-chrome-stable --app=https://web.groupme.com/chats; mode "default"; 
-	bindsym $mod+g exec google-chrome-stable --app=https://web.groupme.com/chats; mode "default"; 
-	bindsym d exec discord; mode "default"; 
-	bindsym $mod+d exec discord; mode "default"; 
-	bindsym m exec steam
-	bindsym $mod+m exec steam
-	bindsym c exec google-chrome-stable; mode "default"
-	bindsym $mod+c exec google-chrome-stable; mode "default"
-	bindsym s exec subl3; mode "default"
-	bindsym $mod+s exec subl3; mode "default"
-	bindsym f exec nautilus --browser; mode "default"
-	bindsym $mod+f exec nautilus --browser; mode "default"
 	bindsym Escape mode "default"
 	bindsym Return mode "default"
 }
 
+<<<<<<< HEAD
 # exec --no-startup-id xfce4-power-manager
 # exec --no-startup-id ~/.config/i3/scripts/xautolock.sh
 # exec --no-startup-id xflux
@@ -218,6 +234,17 @@ bindsym $mod+$alt+Return [instance="quake"] scratchpad show
 # 	mode dock
 # 	position top
 # }
+=======
+# startup appsn it. Then suddenly chomp...
+########################
+exec xrdb -load ~/.Xresources; 
+
+exec_always --no-startup-id nitrogen --set-zoom-fill /home/safturento/Dropbox/Photos/Wallpapers/Tri-Monitor/agCqv1G.jpg
+exec_always --no-startup-id killall -q compton; compton --config ~/.config/.compton.conf -b
+exec_always --no-startup-id ~/.config/polybar/launch.sh --log=1
+exec --no-startup-id dropbox-cli start
+exec --no-startup-id xflux
+>>>>>>> 63414fc787221cefbe4b2ae2b4d4944ff11f4fd5
 
 # i3-gaps config 
 ########################
