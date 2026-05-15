@@ -1,0 +1,29 @@
+# Force LF line endings on every text file. Critical for shell scripts
+# (install.sh) and PowerShell scripts checked out on a fresh Windows
+# machine where core.autocrlf=true would otherwise rewrite them as CRLF.
+
+* text=auto eol=lf
+
+# Common text formats — explicit even though * text=auto covers them.
+*.sh        text eol=lf
+*.zsh       text eol=lf
+*.md        text eol=lf
+*.toml      text eol=lf
+*.json      text eol=lf
+*.jsonc     text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# PowerShell: keep as LF in the repo. Windows PS handles LF fine when
+# the file has a UTF-8 BOM (which install.ps1 does — see the bytes at
+# offset 0). Without the BOM, PS 5.1 may misread non-ASCII characters.
+*.ps1       text eol=lf working-tree-encoding=UTF-8
+
+# Binary types — tell git not to attempt CRLF detection.
+*.ttf       binary
+*.otf       binary
+*.woff      binary
+*.woff2     binary
+*.zip       binary
+*.png       binary
+*.jpg       binary

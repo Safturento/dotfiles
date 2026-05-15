@@ -1,0 +1,13 @@
+# Font zips — too big for git, downloaded on-demand by install.sh
+fonts/*.zip
+fonts/*.ttf
+fonts/*.otf
+
+# Local-only overrides (kept out of the public repo)
+*.local
+*.local.*
+
+# OS / editor cruft
+.DS_Store
+*~
+*.swp

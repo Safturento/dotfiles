@@ -1,0 +1,64 @@
+// ─────────────────────────────────────────────────────────────────────
+// Windows Terminal — snippets to merge into your existing settings.json
+//
+// Open Windows Terminal → Settings → click the gear icon at the bottom-left
+// (or Ctrl+,) → "Open JSON file" → merge the pieces below.
+//
+// Path on disk:
+//   %LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
+//
+// DO NOT replace your whole file — just paste:
+//   1. The "Catppuccin Mocha" object into the top-level "schemes" array
+//   2. The profile defaults into "profiles" → "defaults"
+//   3. Optional: set the Ubuntu profile's "colorScheme" if you want it
+//      different per-profile
+// ─────────────────────────────────────────────────────────────────────
+
+// ─── 1. Add to "schemes": [...] ─────────────────────────────────────
+{
+  "name": "Catppuccin Mocha",
+  "cursorColor":     "#F5E0DC",
+  "selectionBackground": "#585B70",
+  "background":      "#1E1E2E",
+  "foreground":      "#CDD6F4",
+  "black":           "#45475A",
+  "red":             "#F38BA8",
+  "green":           "#A6E3A1",
+  "yellow":          "#F9E2AF",
+  "blue":            "#89B4FA",
+  "purple":          "#F5C2E7",
+  "cyan":            "#94E2D5",
+  "white":           "#BAC2DE",
+  "brightBlack":     "#585B70",
+  "brightRed":       "#F38BA8",
+  "brightGreen":     "#A6E3A1",
+  "brightYellow":    "#F9E2AF",
+  "brightBlue":      "#89B4FA",
+  "brightPurple":    "#F5C2E7",
+  "brightCyan":      "#94E2D5",
+  "brightWhite":     "#A6ADC8"
+}
+
+// ─── 2. Apply theme + font globally — merge into "profiles": { "defaults": { ... } } ─
+{
+  "colorScheme": "Catppuccin Mocha",
+  "font": {
+    "face": "FiraCode Nerd Font",
+    "size": 11,
+    "weight": "normal"
+  },
+  "cursorShape": "filledBox",
+  "antialiasingMode": "grayscale",
+  "padding": "8",
+  "useAcrylic": false,
+  "opacity": 100
+}
+
+// ─── 3. Optional top-level settings ─────────────────────────────────
+// Paste these at the root of settings.json (sibling of "profiles", "schemes")
+{
+  "defaultProfile": "{2c4de342-38b7-51cf-b940-2309a097f518}", // your Ubuntu profile GUID — leave yours as-is
+  "copyOnSelect": true,
+  "copyFormatting": "none",
+  "wordDelimiters": " /\\()\"'-.,:;<>~!@#$%^&*|+=[]{}~?│"
+}
