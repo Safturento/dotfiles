@@ -1,0 +1,55 @@
+# Delta config — included from ~/.gitconfig via install.sh.
+# Theme: Catppuccin Mocha, matching the terminal + bat config.
+
+[core]
+	pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[merge]
+	conflictstyle = zdiff3
+
+[delta]
+	features = catppuccin-mocha
+	navigate = true            ; n/N to jump between diff sections
+	line-numbers = true
+	side-by-side = false       ; flip to true if you prefer split view
+	hyperlinks = true
+	dark = true
+	# bat must have the "Catppuccin Mocha" theme installed for this to render
+	syntax-theme = Catppuccin Mocha
+
+[delta "catppuccin-mocha"]
+	# Backgrounds: desaturated reds/greens against Mocha base (#1e1e2e)
+	minus-style                   = syntax "#3f2231"
+	minus-non-emph-style          = syntax "#3f2231"
+	minus-emph-style              = syntax "#763842"
+	minus-empty-line-marker-style = syntax "#3f2231"
+	plus-style                    = syntax "#1f3a30"
+	plus-non-emph-style           = syntax "#1f3a30"
+	plus-emph-style               = syntax "#316d4c"
+	plus-empty-line-marker-style  = syntax "#1f3a30"
+
+	# Mocha accent colors for line numbers + decorations
+	line-numbers-minus-style      = "#f38ba8"   ; red
+	line-numbers-plus-style       = "#a6e3a1"   ; green
+	line-numbers-zero-style       = "#45475a"   ; surface1
+	line-numbers-left-style       = "#6c7086"   ; overlay0
+	line-numbers-right-style      = "#6c7086"   ; overlay0
+
+	file-style                    = "#cdd6f4" bold       ; text
+	file-decoration-style         = "#45475a" ul         ; surface1 underline
+	hunk-header-style             = "#cba6f7" bold       ; mauve
+	hunk-header-decoration-style  = "#45475a" box
+
+	# Merge conflict markers
+	merge-conflict-begin-symbol            = ⌃
+	merge-conflict-end-symbol              = ⌄
+	merge-conflict-ours-diff-header-style  = "#fab387" bold     ; peach
+	merge-conflict-theirs-diff-header-style = "#89dceb" bold    ; sky
+	merge-conflict-ours-diff-header-decoration-style  = "#45475a" box
+	merge-conflict-theirs-diff-header-decoration-style = "#45475a" box
+
+	# git blame palette (rotates through these for adjacent commits)
+	blame-palette = "#1e1e2e" "#181825" "#11111b" "#313244" "#45475a"

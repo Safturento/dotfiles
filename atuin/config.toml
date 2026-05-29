@@ -1,0 +1,30 @@
+# atuin config — managed via ~/dotfiles (symlinked to ~/.config/atuin/config.toml)
+# Full reference: https://docs.atuin.sh/configuration/config/
+
+## Search & UI ─────────────────────────────────────────────────────────
+# Compact inline view feels less disruptive than fullscreen for short queries
+style = "compact"
+inline_height = 20
+
+# Fuzzy match by default; matches how fzf behaves
+search_mode = "fuzzy"
+filter_mode = "global"             # show history from all dirs by default
+filter_mode_shell_up_key_binding = "session"
+
+# Show preview of full command on the right side
+show_preview = true
+show_help = true
+
+## Sync ────────────────────────────────────────────────────────────────
+# Enable later with `atuin login` + `atuin register` if you want cross-machine sync.
+# auto_sync = true
+# sync_frequency = "10m"
+# sync_address = "https://api.atuin.sh"
+
+## Stats ───────────────────────────────────────────────────────────────
+# `atuin stats` ignores these prefixes when computing common-command stats
+common_subcommands = ["cargo", "go", "git", "npm", "yarn", "pnpm", "bun", "docker", "kubectl"]
+
+## Theme ───────────────────────────────────────────────────────────────
+[theme]
+name = "catppuccin-mocha"
