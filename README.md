@@ -8,8 +8,9 @@ symlinks them out to `~`. Nothing is added to git unless you explicitly
 
 ```
 dotfiles/
-├── zsh/.zshrc                       → ~/.zshrc
+├── zsh/.zshrc                       → ~/.zshrc            (cross-platform: macOS + WSL/Linux)
 ├── starship/starship.toml           → ~/.config/starship.toml
+├── ghostty/config                   → ~/.config/ghostty/config
 ├── windows-terminal/                  manual-merge reference
 │   └── settings-snippets.jsonc
 ├── windows/
@@ -18,7 +19,13 @@ dotfiles/
 └── install.sh                         creates the symlinks
 ```
 
+The terminal emulator is [Ghostty](https://ghostty.org) (macOS + Linux),
+themed Catppuccin Mocha with FiraCode Nerd Font Mono. On Windows proper,
+the Windows Terminal snippets below cover the same theme/font.
+
 ## Install on a new machine
+
+### Linux / WSL (Ubuntu/Debian)
 
 ```bash
 # 1. system packages
@@ -35,8 +42,22 @@ git clone <repo-url> ~/dotfiles
 chsh -s "$(which zsh)"
 ```
 
+### macOS (Homebrew)
+
+```bash
+# 1. CLI tools + terminal + font
+brew install starship eza bat fd fzf zoxide
+brew install --cask ghostty font-fira-code-nerd-font
+
+# 2. clone + symlink (zsh is already the default shell on macOS)
+git clone <repo-url> ~/dotfiles
+~/dotfiles/install.sh
+```
+
 Then open a new shell — `~/.zshrc` is symlinked, starship is on PATH,
-prompt is themed.
+prompt is themed. The `.zshrc` auto-detects the OS, so the same file
+drives both macOS and WSL/Linux; machine-specific bits go in
+`~/.zshrc.local` (see below).
 
 ## Windows side — fonts + terminal
 

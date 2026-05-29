@@ -1,0 +1,31 @@
+# ─────────────────────────────────────────────────────────────────────
+# ghostty — managed via ~/dotfiles (symlinked to ~/.config/ghostty/config)
+# Theme: Catppuccin Mocha (built-in) · Font: FiraCode Nerd Font Mono
+# Cross-platform: works on macOS and Linux (incl. WSLg). Reload in-app
+# with cmd/ctrl+shift+, or restart Ghostty.
+# ─────────────────────────────────────────────────────────────────────
+
+# Matches the Catppuccin Mocha scheme used by starship, fzf, and bat.
+theme = Catppuccin Mocha
+
+# Nerd Font so eza/starship glyphs render. The Mono variant has fixed
+# advance widths — the right pick for a terminal. Install on Linux via
+# your package manager's `fira-code-nerd-font` (or the same brew cask).
+font-family = FiraCode Nerd Font Mono
+font-size = 13
+
+# Padding to match the 8px used in the Windows Terminal setup.
+window-padding-x = 8
+window-padding-y = 8
+
+cursor-style = block
+cursor-style-blink = false
+
+scrollback-limit = 10000
+
+# Mirror the Windows Terminal copyOnSelect behavior.
+copy-on-select = true
+
+# macOS: treat Option as Alt so Alt-C (fzf cd picker) and Alt-word zsh
+# bindings work. Recognized but inert on Linux.
+macos-option-as-alt = true

@@ -44,8 +44,16 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
 
 # fzf — Ctrl-R history, Ctrl-T file picker, Alt-C cd picker
-[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
-[ -f /usr/share/doc/fzf/examples/completion.zsh ]   && source /usr/share/doc/fzf/examples/completion.zsh
+if command -v fzf >/dev/null; then
+  # fzf ≥0.48 ships shell integration via `fzf --zsh` (Homebrew, recent distros)
+  if fzf --zsh >/dev/null 2>&1; then
+    source <(fzf --zsh)
+  else
+    # Older Ubuntu/Debian apt packages ship example scripts instead
+    [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+    [ -f /usr/share/doc/fzf/examples/completion.zsh ]   && source /usr/share/doc/fzf/examples/completion.zsh
+  fi
+fi
 
 # Catppuccin Mocha theme for fzf
 export FZF_DEFAULT_OPTS=" \
@@ -55,28 +63,43 @@ export FZF_DEFAULT_OPTS=" \
 --color=selected-bg:#45475a \
 --multi"
 
-# Use fd for fzf if available — respects .gitignore, faster
-if command -v fdfind >/dev/null; then
-  export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --follow --exclude .git'
-  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-  export FZF_ALT_C_COMMAND='fdfind --type d --hidden --follow --exclude .git'
+# Use fd for fzf if available — respects .gitignore, faster.
+# Ubuntu names the binary `fdfind`; Homebrew/most others name it `fd`.
+if command -v fd >/dev/null; then
+  _fd_bin=fd
+elif command -v fdfind >/dev/null; then
+  _fd_bin=fdfind
 fi
+if [ -n "${_fd_bin:-}" ]; then
+  export FZF_DEFAULT_COMMAND="$_fd_bin --type f --hidden --follow --exclude .git"
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  export FZF_ALT_C_COMMAND="$_fd_bin --type d --hidden --follow --exclude .git"
+fi
+unset _fd_bin
 
 # bat — syntax-highlighted cat
 export BAT_THEME="Catppuccin Mocha"
 
 # lesspipe — make less friendly with archives, PDFs, etc.
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+# Homebrew installs it as lesspipe.sh; Ubuntu/Debian as /usr/bin/lesspipe.
+if command -v lesspipe.sh >/dev/null; then
+  export LESSOPEN="|lesspipe.sh %s"
+elif [ -x /usr/bin/lesspipe ]; then
+  eval "$(SHELL=/bin/sh lesspipe)"
+fi
 
 # ─── WSL / GUI ──────────────────────────────────────────────────────
 
-# WSLg uses /tmp/.X11-unix/X0; older WSL2 + external X server falls back
-# to the nameserver IP. Set DISPLAY accordingly so GUI apps just work.
-if [ -S /tmp/.X11-unix/X0 ]; then
-  export DISPLAY=:0
-else
-  export DISPLAY="$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0"
-  export LIBGL_ALWAYS_INDIRECT=1
+# Only under WSL: set DISPLAY so Linux GUI apps find an X server. WSLg
+# uses /tmp/.X11-unix/X0; older WSL2 + external X server falls back to
+# the nameserver IP. Skipped entirely on macOS / native Linux.
+if [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/version 2>/dev/null; then
+  if [ -S /tmp/.X11-unix/X0 ]; then
+    export DISPLAY=:0
+  else
+    export DISPLAY="$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0"
+    export LIBGL_ALWAYS_INDIRECT=1
+  fi
 fi
 
 # ─── Language toolchains ────────────────────────────────────────────
