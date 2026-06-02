@@ -8,37 +8,56 @@ symlinks them out to `~`. Nothing is added to git unless you explicitly
 
 ```
 dotfiles/
-├── zsh/.zshrc                       → ~/.zshrc            (cross-platform: macOS + WSL/Linux)
-├── starship/starship.toml           → ~/.config/starship.toml
-├── ghostty/config                   → ~/.config/ghostty/config
-├── windows-terminal/                  manual-merge reference
+├── zsh/.zshrc                                          → ~/.zshrc            (cross-platform: macOS + WSL/Linux)
+├── starship/starship.toml                              → ~/.config/starship.toml
+├── ghostty/config                                      → ~/.config/ghostty/config
+├── atuin/config.toml                                   → ~/.config/atuin/config.toml
+├── atuin/themes/catppuccin-mocha.toml                  → ~/.config/atuin/themes/…
+├── tealdeer/config.toml                                → ~/.config/tealdeer/config.toml
+├── claude/themes/catppuccin-mocha.json                 → ~/.claude/themes/…
+├── git/delta.gitconfig                                   included from ~/.gitconfig
+├── windows-terminal/                                     manual-merge reference
 │   └── settings-snippets.jsonc
 ├── windows/
-│   └── install.ps1                    Windows-side: fonts + WT settings
-├── fonts/                             staging only (gitignored)
-└── install.sh                         creates the symlinks
+│   └── install.ps1                                       Windows-side: fonts + WT settings + Winghostty link
+├── fonts/                                                staging only (gitignored)
+└── install.sh                                            creates the symlinks
 ```
 
 The terminal emulator is [Ghostty](https://ghostty.org) (macOS + Linux),
 themed Catppuccin Mocha with FiraCode Nerd Font Mono. On Windows proper,
-the Windows Terminal snippets below cover the same theme/font.
+two options cover the same theme/font: the Windows Terminal snippets below,
+or [Winghostty](https://www.winghostty.com/) (the community Windows port of
+Ghostty) — `windows/install.ps1` symlinks its config
+(`%LOCALAPPDATA%\winghostty\config.ghostty`) to the same `ghostty/config`,
+so all three platforms share one source of truth. The symlink is made with
+`mklink` and needs Windows Developer Mode on (Windows PowerShell 5.1 can't
+create symlinks without admin); without it the script copies instead.
 
 ## Install on a new machine
 
 ### Linux / WSL (Ubuntu/Debian)
 
 ```bash
-# 1. system packages
-sudo apt update && sudo apt install -y zsh eza bat fzf zoxide fd-find unzip
+# 1. system packages — shell + modern Unix replacements
+sudo apt update && sudo apt install -y \
+  zsh eza bat fzf zoxide fd-find unzip \
+  ripgrep git-delta direnv
+
+# tealdeer's apt version (v1.6.x) ships a stale archive URL — install.sh
+# drops the latest upstream binary into ~/.local/bin instead.
 
 # 2. starship (no sudo, installs to ~/.local/bin)
 curl -sS https://starship.rs/install.sh | sh -s -- --yes -b ~/.local/bin
 
-# 3. clone + symlink
+# 3. atuin — not in apt; official installer drops it into ~/.local/bin
+curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+
+# 4. clone + symlink
 git clone <repo-url> ~/dotfiles
 ~/dotfiles/install.sh
 
-# 4. set zsh as default shell (needs password)
+# 5. set zsh as default shell (needs password)
 chsh -s "$(which zsh)"
 ```
 

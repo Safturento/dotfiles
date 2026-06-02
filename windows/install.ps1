@@ -3,7 +3,7 @@
   Windows-side installer for the dotfiles repo.
 
 .DESCRIPTION
-  Three things, all idempotent and reversible:
+  Four things, all idempotent and reversible:
 
   1. Installs every .ttf in <repo>/fonts/<family>/ for the CURRENT USER
      (per-user fonts dir, no admin required). Registers each font in
@@ -13,7 +13,13 @@
      defaults into Windows Terminal settings.json. Backs up the
      existing file to settings.json.bak.<timestamp> first.
 
-  3. Optionally writes HKCU\...\Attachments\SaveZoneInformation = 1 so
+  3. Symlinks %LOCALAPPDATA%\winghostty\config.ghostty to the shared
+     cross-platform ghostty/config in this repo, so Winghostty (the
+     community Windows port of Ghostty) and the WSL/macOS Ghostty stay
+     on a single source of truth. Backs up any existing real file first;
+     falls back to a copy if symlink creation is denied.
+
+  4. Optionally writes HKCU\...\Attachments\SaveZoneInformation = 1 so
      future downloads don't get Mark-of-the-Web tagged. Off by default —
      see README for the tradeoff.
 
@@ -24,6 +30,9 @@
 
 .PARAMETER SkipTerminal
   Don't touch Windows Terminal settings.
+
+.PARAMETER SkipGhostty
+  Don't symlink the Winghostty config.
 
 .PARAMETER ApplyZoneInfoTweak
   Set HKCU SaveZoneInformation = 1. See README for the security note.
@@ -41,6 +50,7 @@
 param(
   [switch]$SkipFonts,
   [switch]$SkipTerminal,
+  [switch]$SkipGhostty,
   [switch]$ApplyZoneInfoTweak
 )
 
@@ -213,7 +223,68 @@ function Update-WindowsTerminal {
   Write-Ok "settings.json written"
 }
 
-# ─── 3. Zone.Identifier registry tweak ──────────────────────────────
+# ─── 3. Winghostty config symlink ───────────────────────────────────
+function New-WinghosttyConfigLink {
+  # Winghostty reads its config from %LOCALAPPDATA%\winghostty\config.ghostty.
+  # Point it at the same cross-platform ghostty/config the WSL/macOS side
+  # already uses (symlinked there by install.sh), so there's one source of
+  # truth. The target is resolved from $DotfilesRoot — itself a \\wsl$\ UNC
+  # path when this script is launched the documented way — and Winghostty
+  # reads through the bridge exactly like the fonts step above. A real
+  # symlink needs Developer Mode or admin (SeCreateSymbolicLinkPrivilege);
+  # if denied we copy instead so the setup still works, just not live.
+  $src = Join-Path $DotfilesRoot 'ghostty\config'
+  if (-not (Test-Path $src)) {
+    Write-Skip "No ghostty/config at $src — nothing to link"
+    return
+  }
+
+  $dstDir = Join-Path $env:LOCALAPPDATA 'winghostty'
+  $dst    = Join-Path $dstDir 'config.ghostty'
+  New-Item -ItemType Directory -Force -Path $dstDir | Out-Null
+
+  Write-Step "Linking Winghostty config"
+
+  $existing = Get-Item $dst -Force -ErrorAction SilentlyContinue
+  if ($existing) {
+    if ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+      # Existing symlink — drop and recreate so the target is guaranteed
+      # current (avoids PS 5.1 vs 7 differences in reading .Target).
+      Remove-Item $dst -Force
+    } elseif ((Get-FileHash $dst).Hash -eq (Get-FileHash $src).Hash) {
+      # A plain file identical to the source — i.e. a copy a prior run made
+      # when symlinking was unavailable. Nothing worth preserving; replace.
+      Remove-Item $dst -Force
+    } else {
+      # A real, different file — most likely Winghostty's first-launch
+      # template. Keep it so the original is recoverable.
+      $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+      Move-Item $dst "$dst.bak.$stamp" -Force
+      Write-Ok "backed up existing config.ghostty to config.ghostty.bak.$stamp"
+    }
+  }
+
+  # Create the symlink with cmd's mklink, NOT New-Item. Windows PowerShell
+  # 5.1's New-Item -ItemType SymbolicLink ignores Developer Mode and demands
+  # admin; mklink honors Dev Mode, so the link is made unprivileged. Push to
+  # a local cwd first, else cmd warns that the script's \\wsl$ working dir is
+  # an unsupported UNC path (harmless, but noisy).
+  Push-Location $env:LOCALAPPDATA
+  cmd /c "mklink `"$dst`" `"$src`"" 2>&1 | Out-Null
+  Pop-Location
+
+  $made = Get-Item $dst -Force -ErrorAction SilentlyContinue
+  if ($made -and ($made.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    Write-Ok "linked config.ghostty -> $src"
+  } else {
+    Copy-Item $src $dst -Force
+    Write-Warn2 "mklink failed — enable Developer Mode (Settings > System >"
+    Write-Warn2 "For developers) or run elevated, then re-run. Copied a static"
+    Write-Warn2 "config for now (edits in the repo won't propagate until linked)."
+  }
+}
+
+# ─── 4. Zone.Identifier registry tweak ──────────────────────────────
 function Set-ZoneInfoTweak {
   $key = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Attachments'
   if (-not (Test-Path $key)) {
@@ -233,6 +304,8 @@ if ($SkipFonts)    { Write-Skip "Skipping fonts (--SkipFonts)" }    else { Insta
 Write-Host ""
 if ($SkipTerminal) { Write-Skip "Skipping Windows Terminal (--SkipTerminal)" } else { Update-WindowsTerminal }
 Write-Host ""
+if ($SkipGhostty)  { Write-Skip "Skipping Winghostty (--SkipGhostty)" }        else { New-WinghosttyConfigLink }
+Write-Host ""
 
 if ($ApplyZoneInfoTweak) {
   Write-Step "Applying SaveZoneInformation tweak"
@@ -242,3 +315,4 @@ if ($ApplyZoneInfoTweak) {
 
 Write-Host "Done." -ForegroundColor Magenta
 Write-Host "Close and reopen Windows Terminal so font + scheme apply." -ForegroundColor DarkGray
+Write-Host "In Winghostty, reload config with Ctrl+Shift+, (or restart it)." -ForegroundColor DarkGray

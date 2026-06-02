@@ -1,0 +1,16 @@
+# Catppuccin Mocha theme for atuin
+# Place at ~/.config/atuin/themes/catppuccin-mocha.toml (install.sh symlinks)
+# Reference: https://docs.atuin.sh/configuration/themes/
+
+[theme]
+name = "catppuccin-mocha"
+
+[colors]
+AlertInfo  = "#89dceb"     # sky
+AlertWarn  = "#fab387"     # peach
+AlertError = "#f38ba8"     # red
+Annotation = "#bac2de"     # subtext1
+Base       = "#cdd6f4"     # text
+Guidance   = "#a6adc8"     # subtext0
+Important  = "#cba6f7"     # mauve
+Title      = "#f5c2e7"     # pink

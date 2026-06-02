@@ -5,6 +5,14 @@
 # PATH — local bins (starship installs here, plus user scripts)
 export PATH="$HOME/.local/bin:$PATH"
 
+# Force 24-bit truecolor advertisement. Windows Terminal supports it but
+# doesn't always set COLORTERM through WSL, so libraries like chalk (used
+# by Claude Code) silently fall back to 256-color quantization — which
+# breaks any custom theme that picks specific hex values, since each hex
+# gets snapped to the nearest ANSI 256 index and re-rendered by the
+# terminal's own palette.
+export COLORTERM=truecolor
+
 # History
 HISTFILE=~/.zsh_history
 HISTSIZE=50000
@@ -24,11 +32,34 @@ setopt CORRECT                 # gentle command typo correction
 setopt INTERACTIVE_COMMENTS    # allow # comments at prompt
 setopt NO_BEEP
 
+# ─── Plugins ────────────────────────────────────────────────────────
+# Plugins are git-cloned by install.sh into the dir below. Order matters:
+#   1. zsh-completions  → adds to $fpath; must precede compinit
+#   2. compinit         → loads all completion definitions
+#   3. fzf-tab          → must come after compinit, before autosuggestions
+#   4. zsh-autosuggestions → loads last so it can hook the line editor
+ZSH_PLUGIN_DIR="$HOME/.local/share/zsh/plugins"
+
+# zsh-completions — extra completion defs for tools that ship without them
+[ -d "$ZSH_PLUGIN_DIR/zsh-completions/src" ] && \
+  fpath=("$ZSH_PLUGIN_DIR/zsh-completions/src" $fpath)
+
 # Completion
 autoload -Uz compinit && compinit
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+# fzf-tab — replaces Tab menu with an fzf picker (uses FZF_DEFAULT_OPTS below)
+[ -f "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh" ] && \
+  source "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh"
+
+# zsh-autosuggestions — ghosted history suggestion; accept with → or End
+if [ -f "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
+  source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  # Dim suggestion color so it reads as a ghost against Catppuccin Mocha
+  ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#6c7086'
+fi
 
 # Key bindings — emacs (default) with a couple of niceties
 bindkey -e
@@ -43,7 +74,8 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 # zoxide — smart cd. `z foo` jumps, `zi foo` interactive
 command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
 
-# fzf — Ctrl-R history, Ctrl-T file picker, Alt-C cd picker
+# fzf — Ctrl-T file picker, Alt-C cd picker. Load these first so atuin's
+# init (below) can cleanly reclaim Ctrl-R for history search.
 if command -v fzf >/dev/null; then
   # fzf ≥0.48 ships shell integration via `fzf --zsh` (Homebrew, recent distros)
   if fzf --zsh >/dev/null 2>&1; then
@@ -54,6 +86,13 @@ if command -v fzf >/dev/null; then
     [ -f /usr/share/doc/fzf/examples/completion.zsh ]   && source /usr/share/doc/fzf/examples/completion.zsh
   fi
 fi
+
+# atuin — shell history with fuzzy search + optional sync. Owns Ctrl-R.
+# --disable-up-arrow leaves Up doing normal previous-line navigation.
+command -v atuin >/dev/null && eval "$(atuin init zsh --disable-up-arrow)"
+
+# direnv — auto-load .envrc when entering a project dir
+command -v direnv >/dev/null && eval "$(direnv hook zsh)"
 
 # Catppuccin Mocha theme for fzf
 export FZF_DEFAULT_OPTS=" \
@@ -153,3 +192,5 @@ alias zshreload='source ~/.zshrc'
 # Anything machine-specific (work tokens, employer-specific env) lives
 # in ~/.zshrc.local and is NOT tracked in the dotfiles repo.
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+. "$HOME/.atuin/bin/env"

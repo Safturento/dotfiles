@@ -1,0 +1,32 @@
+# tealdeer config — managed via ~/dotfiles
+# Symlinked to ~/.config/tealdeer/config.toml by install.sh.
+# Reference: https://tealdeer-rs.github.io/tealdeer/config.html
+
+[display]
+compact = false       # keep blank lines between sections — easier to scan
+use_pager = false
+
+[updates]
+auto_update = true    # refresh local tldr cache when older than the interval
+auto_update_interval_hours = 720   # ~30 days
+
+## Catppuccin Mocha-aligned colors ───────────────────────────────────────
+# tealdeer accepts named ANSI colors OR hex via [r,g,b]. Hex below to match
+# the rest of the terminal theme exactly.
+
+[style.description]
+foreground = { rgb = [205, 214, 244] }  # text
+
+[style.command_name]
+foreground = { rgb = [203, 166, 247] }  # mauve
+bold = true
+
+[style.example_text]
+foreground = { rgb = [166, 227, 161] }  # green
+
+[style.example_code]
+foreground = { rgb = [137, 180, 250] }  # blue
+
+[style.example_variable]
+foreground = { rgb = [245, 194, 231] }  # pink
+italic = true
