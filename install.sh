@@ -58,6 +58,28 @@ link "$DOTFILES/claude/skills/establishing-a-new-project" "$HOME/.claude/skills/
 link "$DOTFILES/claude/skills/readme-freshness-check"     "$HOME/.claude/skills/readme-freshness-check"
 link "$DOTFILES/claude/conventions/project-scaffolding.md" "$HOME/.claude/conventions/project-scaffolding.md"
 link "$DOTFILES/claude/hooks/doc-parity-gate.sh"          "$HOME/.claude/hooks/doc-parity-gate.sh"
+link "$DOTFILES/claude/CLAUDE.md"                         "$HOME/.claude/CLAUDE.md"
+link "$DOTFILES/claude/conventions/code-quality.md"          "$HOME/.claude/conventions/code-quality.md"
+link "$DOTFILES/claude/conventions/crew-dispatch.md"         "$HOME/.claude/conventions/crew-dispatch.md"
+link "$DOTFILES/claude/conventions/designer-collaboration.md" "$HOME/.claude/conventions/designer-collaboration.md"
+link "$DOTFILES/claude/conventions/documentation.md"        "$HOME/.claude/conventions/documentation.md"
+link "$DOTFILES/claude/conventions/figma.md"                "$HOME/.claude/conventions/figma.md"
+link "$DOTFILES/claude/conventions/line-endings.md"         "$HOME/.claude/conventions/line-endings.md"
+link "$DOTFILES/claude/conventions/node.md"                 "$HOME/.claude/conventions/node.md"
+link "$DOTFILES/claude/conventions/self-improvement.md"     "$HOME/.claude/conventions/self-improvement.md"
+link "$DOTFILES/claude/skills/agents-doc-parity-check"         "$HOME/.claude/skills/agents-doc-parity-check"
+link "$DOTFILES/claude/skills/bruno-collection-maintenance"    "$HOME/.claude/skills/bruno-collection-maintenance"
+link "$DOTFILES/claude/skills/figma-design-system-propagation" "$HOME/.claude/skills/figma-design-system-propagation"
+link "$DOTFILES/claude/skills/figma-screen-migration"         "$HOME/.claude/skills/figma-screen-migration"
+link "$DOTFILES/claude/skills/mumen"                          "$HOME/.claude/skills/mumen"
+link "$DOTFILES/claude/skills/reaching-for-backend-patterns"  "$HOME/.claude/skills/reaching-for-backend-patterns"
+link "$DOTFILES/claude/skills/reaching-for-frontend-libraries" "$HOME/.claude/skills/reaching-for-frontend-libraries"
+link "$DOTFILES/claude/skills/visual-fidelity-check"          "$HOME/.claude/skills/visual-fidelity-check"
+link "$DOTFILES/claude/hooks/reminder-checkin.mjs"        "$HOME/.claude/hooks/reminder-checkin.mjs"
+link "$DOTFILES/claude/reminders"                         "$HOME/.claude/reminders"
+
+# Register the reminder check-in as a SessionStart hook (settings.json stays local)
+ensure_session_start_hook "$NODE_BIN $HOME/.claude/hooks/reminder-checkin.mjs"
 
 # ── Git: include delta config ──────────────────────────────────────
 # Delta lives in its own gitconfig fragment to avoid clobbering the
