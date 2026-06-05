@@ -1,11 +1,6 @@
 # Font binaries — too big for git, extracted from zips on-demand by install.sh.
 # Use ** so the patterns also match extracted families in fonts/<name>/ subdirs.
-fonts/**/*.zip
-fonts/**/*.ttf
-fonts/**/*.otf
-fonts/*.zip
-fonts/*.ttf
-fonts/*.otf
+fonts
 
 # Local-only overrides (kept out of the public repo)
 *.local
