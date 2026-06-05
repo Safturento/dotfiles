@@ -385,7 +385,7 @@ test('localToday returns YYYY-MM-DD', () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `node --test claude/hooks/`
+Run: `node --test 'claude/hooks/*.test.mjs'`
 Expected: FAIL — `Cannot find module './reminder-checkin.mjs'` (file not created yet).
 
 - [ ] **Step 3: Implement the module**
@@ -524,7 +524,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `node --test claude/hooks/`
+Run: `node --test 'claude/hooks/*.test.mjs'`  (the bare-directory form misbehaves in Node 24)
 Expected: PASS — all tests green (10 passing).
 
 - [ ] **Step 5: Commit**
@@ -745,7 +745,7 @@ Run:
 
 ```bash
 cd ~/dotfiles
-node --test claude/hooks/
+node --test 'claude/hooks/*.test.mjs'
 bash -n install.sh && echo "install.sh syntax ok"
 ```
 
