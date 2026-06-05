@@ -6,6 +6,11 @@ set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 
+# Stable absolute node path. fnm's per-shell multishell symlink dies when its
+# originating shell exits; aliases/default persists. Falls back to PATH.
+NODE_BIN="$( [ -x "$HOME/.local/share/fnm/aliases/default/bin/node" ] \
+  && echo "$HOME/.local/share/fnm/aliases/default/bin/node" || command -v node )"
+
 link() {
   local src="$1" dst="$2"
   mkdir -p "$(dirname "$dst")"
@@ -21,6 +26,24 @@ link() {
     ln -s "$src" "$dst"
     echo "  new  $dst"
   fi
+}
+
+# Idempotently register a SessionStart hook command in ~/.claude/settings.json.
+# settings.json stays machine-local (not tracked); this keeps the registration
+# reproducible without publishing it. Mirrors the delta include.path block below.
+ensure_session_start_hook() {
+  local cmd="$1"
+  local settings="$HOME/.claude/settings.json"
+  [ -f "$settings" ] || { echo "  skip SessionStart hook (no settings.json)"; return; }
+  "$NODE_BIN" -e '
+    const fs=require("fs"), p=process.argv[2], cmd=process.argv[3];
+    const s=JSON.parse(fs.readFileSync(p,"utf8"));
+    s.hooks=s.hooks||{}; s.hooks.SessionStart=s.hooks.SessionStart||[];
+    const has=s.hooks.SessionStart.some(g=>(g.hooks||[]).some(h=>h.command===cmd));
+    if(!has){s.hooks.SessionStart.push({hooks:[{type:"command",command:cmd}]});
+      fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");console.log("  new  SessionStart hook");}
+    else{console.log("  ok   SessionStart hook");}
+  ' "$settings" "$cmd"
 }
 
 echo "Linking dotfiles from $DOTFILES"
