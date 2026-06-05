@@ -31,6 +31,10 @@ link "$DOTFILES/atuin/config.toml"                     "$HOME/.config/atuin/conf
 link "$DOTFILES/atuin/themes/catppuccin-mocha.toml"    "$HOME/.config/atuin/themes/catppuccin-mocha.toml"
 link "$DOTFILES/tealdeer/config.toml"                  "$HOME/.config/tealdeer/config.toml"
 link "$DOTFILES/claude/themes/catppuccin-mocha.json"   "$HOME/.claude/themes/catppuccin-mocha.json"
+link "$DOTFILES/claude/skills/establishing-a-new-project" "$HOME/.claude/skills/establishing-a-new-project"
+link "$DOTFILES/claude/skills/readme-freshness-check"     "$HOME/.claude/skills/readme-freshness-check"
+link "$DOTFILES/claude/conventions/project-scaffolding.md" "$HOME/.claude/conventions/project-scaffolding.md"
+link "$DOTFILES/claude/hooks/doc-parity-gate.sh"          "$HOME/.claude/hooks/doc-parity-gate.sh"
 
 # ── Git: include delta config ──────────────────────────────────────
 # Delta lives in its own gitconfig fragment to avoid clobbering the
