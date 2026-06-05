@@ -35,15 +35,7 @@ ensure_session_start_hook() {
   local cmd="$1"
   local settings="$HOME/.claude/settings.json"
   [ -f "$settings" ] || { echo "  skip SessionStart hook (no settings.json)"; return; }
-  "$NODE_BIN" -e '
-    const fs=require("fs"), p=process.argv[2], cmd=process.argv[3];
-    const s=JSON.parse(fs.readFileSync(p,"utf8"));
-    s.hooks=s.hooks||{}; s.hooks.SessionStart=s.hooks.SessionStart||[];
-    const has=s.hooks.SessionStart.some(g=>(g.hooks||[]).some(h=>h.command===cmd));
-    if(!has){s.hooks.SessionStart.push({hooks:[{type:"command",command:cmd}]});
-      fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");console.log("  new  SessionStart hook");}
-    else{console.log("  ok   SessionStart hook");}
-  ' "$settings" "$cmd"
+  "$NODE_BIN" "$DOTFILES/claude/hooks/register-session-hook.mjs" "$settings" "$cmd"
 }
 
 echo "Linking dotfiles from $DOTFILES"
