@@ -59,7 +59,13 @@ NODE_BIN="$( [ -x "$HOME/.local/share/fnm/aliases/default/bin/node" ] \
   && echo "$HOME/.local/share/fnm/aliases/default/bin/node" || command -v node )"
 ```
 
-- [ ] **Step 2: Add the helper** after the `link()` function closes (before `echo "Linking..."`):
+- [ ] **Step 2: Add a dedicated registrar script** at `claude/hooks/register-session-hook.mjs`
+  (extracted rather than inline `node -e` — inline `-e` mishandles argv indexing and is fragile to
+  shell `!`-escaping; a script is testable and robust). It exports `addSessionStartHook(settings, cmd)`
+  (idempotent; returns whether it added) and, run directly, takes `<settings.json> <command>` and
+  writes. Add a sibling `register-session-hook.test.mjs` covering add / idempotent / bootstrap.
+
+- [ ] **Step 3: Add the helper** after the `link()` function closes (before `echo "Linking..."`):
 
 ```bash
 # Idempotently register a SessionStart hook command in ~/.claude/settings.json.
@@ -69,26 +75,20 @@ ensure_session_start_hook() {
   local cmd="$1"
   local settings="$HOME/.claude/settings.json"
   [ -f "$settings" ] || { echo "  skip SessionStart hook (no settings.json)"; return; }
-  "$NODE_BIN" -e '
-    const fs=require("fs"), p=process.argv[2], cmd=process.argv[3];
-    const s=JSON.parse(fs.readFileSync(p,"utf8"));
-    s.hooks=s.hooks||{}; s.hooks.SessionStart=s.hooks.SessionStart||[];
-    const has=s.hooks.SessionStart.some(g=>(g.hooks||[]).some(h=>h.command===cmd));
-    if(!has){s.hooks.SessionStart.push({hooks:[{type:"command",command:cmd}]});
-      fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");console.log("  new  SessionStart hook");}
-    else{console.log("  ok   SessionStart hook");}
-  ' "$settings" "$cmd"
+  "$NODE_BIN" "$DOTFILES/claude/hooks/register-session-hook.mjs" "$settings" "$cmd"
 }
 ```
 
-- [ ] **Step 3: Syntax check + commit**
+- [ ] **Step 4: Syntax check + test + commit**
 
 ```bash
 cd ~/dotfiles && bash -n install.sh && echo "ok"
-git add install.sh && git commit -m "feat(install): node path + idempotent SessionStart hook helper"
+node --test 'claude/hooks/register-session-hook.test.mjs'
+git add install.sh claude/hooks/register-session-hook.mjs claude/hooks/register-session-hook.test.mjs
+git commit -m "feat(install): node path + idempotent SessionStart hook registrar"
 ```
 
-Expected: `ok`.
+Expected: `ok`; registrar tests pass.
 
 ## Task P0.2: Migrate CLAUDE.md
 
