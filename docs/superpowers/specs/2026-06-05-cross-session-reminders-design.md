@@ -48,6 +48,24 @@ Approach **A — flat files + a global hook script + a `CLAUDE.md` convention**.
 and over folding into `crew` (a global concern shouldn't couple to one project's tooling; crew's
 hooks aren't loaded in a skadimetric session).
 
+### Prerequisite: config consolidation (Phase 0)
+
+This work surfaced that `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, and most of
+`~/.claude/conventions/` + `~/.claude/skills/` are **not** tracked in `~/dotfiles` — the same
+"untracked config silently drifts" class of failure this spec fights. So a **Phase 0** precedes
+the reminders feature: bring all user-authored agent config under dotfiles management.
+
+- **Track + symlink** into `~/dotfiles/claude/`: `CLAUDE.md`, the 8 untracked conventions, the 9
+  untracked skills (skip the empty `learned/` dir). Hooks are already fully tracked.
+- **`settings.json` stays local** (machine-specific allowlist + absolute paths; `dotfiles` is a
+  **public** repo). Instead, `install.sh` gains an **idempotent `ensure_session_start_hook`
+  helper** that registers a hook command into `~/.claude/settings.json` if absent — mirroring the
+  existing `git config --add include.path` idempotent pattern.
+
+The reminders feature (below) then lands *on top of* this: the "Reminders" convention edits the
+now-tracked `CLAUDE.md`, and the check-in hook is registered via the new install.sh helper rather
+than a manual settings.json edit.
+
 Five units, each independently understandable:
 
 ### Unit 1 — Reminder file format

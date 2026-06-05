@@ -16,14 +16,17 @@
 
 | Change | Location | Tracked? |
 | --- | --- | --- |
-| Hook script + tests | `~/dotfiles/claude/hooks/reminder-checkin.{mjs,test.mjs}` | dotfiles PR |
-| Reminder store scaffolding | `~/dotfiles/claude/reminders/` (README + archive/) | dotfiles PR |
-| Symlink wiring | `~/dotfiles/install.sh` | dotfiles PR |
-| `.state/` ignore | `~/dotfiles/.gitignore` | dotfiles PR |
-| SessionStart hook registration | `~/.claude/settings.json` | **in-place** (not dotfiles-tracked) |
-| "Reminders" convention | `~/.claude/CLAUDE.md` | **in-place** (not dotfiles-tracked) |
+| **P0** CLAUDE.md, conventions, skills migrated | `~/dotfiles/claude/{CLAUDE.md,conventions/,skills/}` (symlinked back) | dotfiles PR |
+| **P0** `ensure_session_start_hook` helper + symlinks | `~/dotfiles/install.sh` | dotfiles PR |
+| **P1** Hook script + tests | `~/dotfiles/claude/hooks/reminder-checkin.{mjs,test.mjs}` | dotfiles PR |
+| **P1** Reminder store scaffolding | `~/dotfiles/claude/reminders/` (README + archive/) | dotfiles PR |
+| **P1** `.state/` ignore | `~/dotfiles/.gitignore` | dotfiles PR |
+| **P1** "Reminders" convention | `~/dotfiles/claude/CLAUDE.md` (now tracked, via P0) | dotfiles PR |
+| `settings.json` SessionStart registration | `~/.claude/settings.json` | **local** (machine-specific); written idempotently by `install.sh`, not tracked |
 
-The two in-place edits are `~/.claude/**` (handle-manually zone); they are applied directly, not committed to the dotfiles PR.
+Everything except `~/.claude/settings.json` is dotfiles-tracked after Phase 0. `settings.json` stays
+local (public-repo + machine-specific allowlist) but its reminder-hook registration is reproducible
+via the `install.sh` helper.
 
 ## File structure
 
@@ -34,6 +37,195 @@ The two in-place edits are `~/.claude/**` (handle-manually zone); they are appli
 - `claude/reminders/.state/` — gitignored throttle state (created at runtime).
 
 ---
+
+# Phase 0 — Config consolidation
+
+Bring all user-authored `~/.claude` agent config under dotfiles management so it's tracked,
+backed up, and reproducible. Migration per file is: `mv` it into `~/dotfiles/claude/`, add a
+`link` line to `install.sh`, run `install.sh` (creates the symlink back), verify. `mv` preserves
+content (nothing is read into the transcript). `settings.json` is deliberately NOT migrated.
+
+## Task P0.1: install.sh — node resolution + idempotent hook-registration helper
+
+**Files:**
+- Modify: `install.sh` (after `DOTFILES=...`, and after the `link()` function)
+
+- [ ] **Step 1: Add a stable node path** after the `DOTFILES="$(...)"` line:
+
+```bash
+# Stable absolute node path. fnm's per-shell multishell symlink dies when its
+# originating shell exits; aliases/default persists. Falls back to PATH.
+NODE_BIN="$( [ -x "$HOME/.local/share/fnm/aliases/default/bin/node" ] \
+  && echo "$HOME/.local/share/fnm/aliases/default/bin/node" || command -v node )"
+```
+
+- [ ] **Step 2: Add the helper** after the `link()` function closes (before `echo "Linking..."`):
+
+```bash
+# Idempotently register a SessionStart hook command in ~/.claude/settings.json.
+# settings.json stays machine-local (not tracked); this keeps the registration
+# reproducible without publishing it. Mirrors the delta include.path block below.
+ensure_session_start_hook() {
+  local cmd="$1"
+  local settings="$HOME/.claude/settings.json"
+  [ -f "$settings" ] || { echo "  skip SessionStart hook (no settings.json)"; return; }
+  "$NODE_BIN" -e '
+    const fs=require("fs"), p=process.argv[2], cmd=process.argv[3];
+    const s=JSON.parse(fs.readFileSync(p,"utf8"));
+    s.hooks=s.hooks||{}; s.hooks.SessionStart=s.hooks.SessionStart||[];
+    const has=s.hooks.SessionStart.some(g=>(g.hooks||[]).some(h=>h.command===cmd));
+    if(!has){s.hooks.SessionStart.push({hooks:[{type:"command",command:cmd}]});
+      fs.writeFileSync(p,JSON.stringify(s,null,2)+"\n");console.log("  new  SessionStart hook");}
+    else{console.log("  ok   SessionStart hook");}
+  ' "$settings" "$cmd"
+}
+```
+
+- [ ] **Step 3: Syntax check + commit**
+
+```bash
+cd ~/dotfiles && bash -n install.sh && echo "ok"
+git add install.sh && git commit -m "feat(install): node path + idempotent SessionStart hook helper"
+```
+
+Expected: `ok`.
+
+## Task P0.2: Migrate CLAUDE.md
+
+**Files:** Move `~/.claude/CLAUDE.md` → `~/dotfiles/claude/CLAUDE.md`; modify `install.sh`.
+
+- [ ] **Step 1: Move + link**
+
+```bash
+mv ~/.claude/CLAUDE.md ~/dotfiles/claude/CLAUDE.md
+```
+
+Add to `install.sh` (with the other `claude/` links):
+
+```bash
+link "$DOTFILES/claude/CLAUDE.md"                        "$HOME/.claude/CLAUDE.md"
+```
+
+- [ ] **Step 2: Install + verify (no content read)**
+
+```bash
+cd ~/dotfiles && ./install.sh 2>&1 | grep -i claude.md
+readlink ~/.claude/CLAUDE.md          # → .../dotfiles/claude/CLAUDE.md
+test -s ~/.claude/CLAUDE.md && echo "non-empty ok"
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add claude/CLAUDE.md install.sh && git commit -m "chore(claude): track CLAUDE.md in dotfiles"
+```
+
+## Task P0.3: Migrate the 8 conventions
+
+**Files:** Move 8 files → `~/dotfiles/claude/conventions/`; modify `install.sh`.
+
+- [ ] **Step 1: Move**
+
+```bash
+cd ~/.claude/conventions
+mv code-quality.md crew-dispatch.md designer-collaboration.md documentation.md \
+   figma.md line-endings.md node.md self-improvement.md \
+   ~/dotfiles/claude/conventions/
+```
+
+- [ ] **Step 2: Add link lines** to `install.sh` (after the existing `project-scaffolding.md` link):
+
+```bash
+link "$DOTFILES/claude/conventions/code-quality.md"          "$HOME/.claude/conventions/code-quality.md"
+link "$DOTFILES/claude/conventions/crew-dispatch.md"         "$HOME/.claude/conventions/crew-dispatch.md"
+link "$DOTFILES/claude/conventions/designer-collaboration.md" "$HOME/.claude/conventions/designer-collaboration.md"
+link "$DOTFILES/claude/conventions/documentation.md"         "$HOME/.claude/conventions/documentation.md"
+link "$DOTFILES/claude/conventions/figma.md"                 "$HOME/.claude/conventions/figma.md"
+link "$DOTFILES/claude/conventions/line-endings.md"          "$HOME/.claude/conventions/line-endings.md"
+link "$DOTFILES/claude/conventions/node.md"                  "$HOME/.claude/conventions/node.md"
+link "$DOTFILES/claude/conventions/self-improvement.md"      "$HOME/.claude/conventions/self-improvement.md"
+```
+
+- [ ] **Step 3: Install + verify all symlinked**
+
+```bash
+cd ~/dotfiles && ./install.sh >/dev/null
+for f in ~/.claude/conventions/*.md; do printf '%s -> %s\n' "$(basename "$f")" "$(readlink "$f" || echo NOT-A-SYMLINK)"; done
+```
+
+Expected: every convention resolves to a `dotfiles/claude/conventions/...` target.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add claude/conventions/ install.sh && git commit -m "chore(claude): track all conventions in dotfiles"
+```
+
+## Task P0.4: Migrate the 8 skills
+
+**Files:** Move 8 dirs → `~/dotfiles/claude/skills/`; modify `install.sh`. (Skip the empty `learned/`.)
+
+- [ ] **Step 1: Move**
+
+```bash
+cd ~/.claude/skills
+mv agents-doc-parity-check bruno-collection-maintenance figma-design-system-propagation \
+   figma-screen-migration mumen reaching-for-backend-patterns \
+   reaching-for-frontend-libraries visual-fidelity-check \
+   ~/dotfiles/claude/skills/
+```
+
+- [ ] **Step 2: Add link lines** to `install.sh` (after the existing skill links):
+
+```bash
+link "$DOTFILES/claude/skills/agents-doc-parity-check"          "$HOME/.claude/skills/agents-doc-parity-check"
+link "$DOTFILES/claude/skills/bruno-collection-maintenance"     "$HOME/.claude/skills/bruno-collection-maintenance"
+link "$DOTFILES/claude/skills/figma-design-system-propagation"  "$HOME/.claude/skills/figma-design-system-propagation"
+link "$DOTFILES/claude/skills/figma-screen-migration"           "$HOME/.claude/skills/figma-screen-migration"
+link "$DOTFILES/claude/skills/mumen"                            "$HOME/.claude/skills/mumen"
+link "$DOTFILES/claude/skills/reaching-for-backend-patterns"    "$HOME/.claude/skills/reaching-for-backend-patterns"
+link "$DOTFILES/claude/skills/reaching-for-frontend-libraries"  "$HOME/.claude/skills/reaching-for-frontend-libraries"
+link "$DOTFILES/claude/skills/visual-fidelity-check"            "$HOME/.claude/skills/visual-fidelity-check"
+```
+
+- [ ] **Step 3: Install + verify**
+
+```bash
+cd ~/dotfiles && ./install.sh >/dev/null
+for d in ~/.claude/skills/*/; do d=${d%/}; printf '%s -> %s\n' "$(basename "$d")" "$(readlink "$d" || echo REAL-DIR)"; done
+```
+
+Expected: the 8 migrated skills (+ the 2 pre-existing) resolve to dotfiles; only `learned` stays a real dir.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add claude/skills/ install.sh && git commit -m "chore(claude): track all authored skills in dotfiles"
+```
+
+## Task P0.5: Phase 0 end-to-end verification
+
+- [ ] **Step 1: Re-run install idempotently**
+
+```bash
+cd ~/dotfiles && ./install.sh 2>&1 | grep -E 'claude|SessionStart' | grep -vi 'ok ' || ./install.sh >/dev/null && echo "idempotent re-run clean"
+```
+
+Expected: a second run reports `ok` for already-linked files, no `.bak` churn.
+
+- [ ] **Step 2: Confirm nothing left untracked**
+
+```bash
+for f in ~/.claude/conventions/*.md ~/.claude/skills/*/ ~/.claude/CLAUDE.md ~/.claude/hooks/*; do
+  [ -e "$f" ] || continue; [ -L "$f" ] || echo "STILL UNTRACKED: $f"
+done; echo "(only ~/.claude/skills/learned expected, if anything)"
+```
+
+Expected: nothing printed except possibly `learned`.
+
+---
+
+# Phase 1 — Reminders feature
 
 ## Task 1: Reminder store scaffolding + gitignore
 
@@ -409,6 +601,13 @@ link "$DOTFILES/claude/hooks/reminder-checkin.mjs"        "$HOME/.claude/hooks/r
 link "$DOTFILES/claude/reminders"                         "$HOME/.claude/reminders"
 ```
 
+Then, after the full `link ...` block (alongside the delta gitconfig `include.path` block at the
+bottom), register the hook idempotently using the Phase 0 helper:
+
+```bash
+ensure_session_start_hook "$NODE_BIN $HOME/.claude/hooks/reminder-checkin.mjs"
+```
+
 - [ ] **Step 2: Run install + verify symlinks**
 
 Run:
@@ -440,63 +639,41 @@ git commit -m "feat(reminders): symlink reminder hook + store via install.sh"
 
 ---
 
-## Task 5: Register the SessionStart hook (in-place ~/.claude/settings.json)
+## Task 5: Verify the SessionStart hook is registered + fires
 
-**Files:**
-- Modify: `~/.claude/settings.json` (in-place; NOT in the dotfiles PR)
+Registration is handled by `install.sh` (`ensure_session_start_hook`, added in Task P0.1 and
+called in Task 4) — no manual settings.json edit. This task just confirms it took.
 
-- [ ] **Step 1: Resolve an absolute node path**
+**Files:** none (verification only)
 
-SessionStart hooks may run in a non-interactive shell where fnm's `node` isn't on `PATH`. Resolve a stable absolute path:
+- [ ] **Step 1: Confirm the hook is registered in settings.json**
 
 ```bash
-( [ -x "$HOME/.local/share/fnm/aliases/default/bin/node" ] \
-    && echo "$HOME/.local/share/fnm/aliases/default/bin/node" ) \
-  || command -v node
+node -e 'const s=require(require("os").homedir()+"/.claude/settings.json");console.log(JSON.stringify(s.hooks.SessionStart,null,2))'
 ```
 
-Use the printed path as `<NODE>` below.
+Expected: a `SessionStart` entry whose command ends in `reminder-checkin.mjs`. Validate JSON is
+intact: `python3 -c "import json;json.load(open('$HOME/.claude/settings.json'));print('valid')"`.
 
-- [ ] **Step 2: Add the SessionStart hook key**
-
-Edit `~/.claude/settings.json`, merging a new `SessionStart` entry into the existing `hooks` object (do NOT replace the object — it already has `PreToolUse`/`PostToolUse`/`PostToolUseFailure`):
-
-```json
-"SessionStart": [
-  {
-    "hooks": [
-      {
-        "type": "command",
-        "command": "<NODE> /home/safturento/.claude/hooks/reminder-checkin.mjs"
-      }
-    ]
-  }
-]
-```
-
-- [ ] **Step 3: Validate JSON**
-
-Run: `python3 -c "import json; json.load(open('$HOME/.claude/settings.json')); print('valid')"`
-Expected: `valid`.
-
-- [ ] **Step 4: Verify the hook actually fires**
-
-Create a temporary global reminder, start a fresh Claude Code session in `~/Repos/crew` (or run the command form below), confirm the check-in surfaces, then delete the temp reminder + its throttle state:
+- [ ] **Step 2: Verify the hook fires through the real path**
 
 ```bash
 printf -- '---\nname: hook-smoke\nscope: global\nstatus: active\n---\nIf you see this in session context, the SessionStart hook works.\n' > ~/.claude/reminders/hook-smoke.md
-echo '{"cwd":"'"$HOME"'/Repos/crew"}' | <NODE> ~/.claude/hooks/reminder-checkin.mjs
+echo '{"cwd":"'"$HOME"'/Repos/crew"}' | "$NODE_BIN" ~/.claude/hooks/reminder-checkin.mjs
 rm -f ~/.claude/reminders/hook-smoke.md ~/.claude/reminders/.state/checkin-crew.json
 ```
 
-Expected: JSON output containing `hook-smoke`. (A new real session is the truest test — confirm the reminder appears in session-start context, then clean up.)
+Expected: JSON output containing `hook-smoke`. (`$NODE_BIN` as resolved in Task P0.1; a brand-new
+real session in `~/Repos/crew` is the truest test — confirm the reminder appears in session-start
+context, then clean up.)
 
 ---
 
-## Task 6: Add the "Reminders" convention to ~/.claude/CLAUDE.md (in-place)
+## Task 6: Add the "Reminders" convention to CLAUDE.md (now dotfiles-tracked)
 
 **Files:**
-- Modify: `~/.claude/CLAUDE.md` (in-place; NOT in the dotfiles PR)
+- Modify: `~/dotfiles/claude/CLAUDE.md` (tracked + symlinked as of Task P0.2 — edit the dotfiles
+  copy; the `~/.claude/CLAUDE.md` symlink reflects it immediately)
 
 - [ ] **Step 1: Insert a "Reminders" section**
 
@@ -547,9 +724,14 @@ active items, bypassing the per-project filter.
 - [ ] **Step 2: Verify the section reads cleanly**
 
 Run: `grep -n "## Reminders (cross-session)" ~/.claude/CLAUDE.md`
-Expected: one match. Re-read the section start-to-finish for contradictions with the existing "Followup detection" and "Park planning intentions in Jira" sections (reminders are lighter-weight than followups/Jira and link to them rather than replace them).
+Expected: one match (the symlink resolves to the tracked dotfiles copy). Re-read the section start-to-finish for contradictions with the existing "Followup detection" and "Park planning intentions in Jira" sections (reminders are lighter-weight than followups/Jira and link to them rather than replace them).
 
-(No commit — `~/.claude/CLAUDE.md` is not dotfiles-tracked.)
+- [ ] **Step 3: Commit**
+
+```bash
+cd ~/dotfiles && git add claude/CLAUDE.md
+git commit -m "docs(claude): add cross-session Reminders convention to CLAUDE.md"
+```
 
 ---
 
@@ -579,7 +761,7 @@ Create a real `scope: project:crew` reminder via the convention (e.g. a throwawa
 cd ~/dotfiles
 git push -u origin cross-session-reminders
 gh pr create --title "Cross-session reminders convention" \
-  --body "Global reminder store + SessionStart check-in hook + CLAUDE.md convention. Spec + plan under docs/superpowers/. Replaces the hand-built per-project SessionStart hook blobs that never self-cleared. NB: the ~/.claude/settings.json hook registration and the ~/.claude/CLAUDE.md 'Reminders' section are applied in-place (not dotfiles-tracked) per Tasks 5–6."
+  --body "Two-phase. Phase 0: bring all user-authored ~/.claude config (CLAUDE.md, conventions, skills) under dotfiles management + add an idempotent install.sh SessionStart-hook registrar. Phase 1: cross-session reminders — global reminder store, SessionStart check-in hook, and the CLAUDE.md Reminders convention. Replaces the hand-built per-project SessionStart hook blobs that never self-cleared. settings.json stays local (machine-specific allowlist) but its reminder-hook registration is reproducible via install.sh. Spec + plan under docs/superpowers/."
 ```
 
 Expected: PR URL printed. Surface it.
@@ -595,10 +777,10 @@ git commit -m "docs(reminders): design spec + implementation plan" || echo "alre
 
 ## Notes
 
-- **Node-on-PATH risk** (Task 5): the single biggest unknown is whether `node` resolves in the
-  SessionStart hook's shell. Task 5 Step 1 pins an absolute path to de-risk it; Step 4 verifies
-  empirically. If a fresh session shows no reminder despite a matching file, suspect the node path
-  first.
+- **Node-on-PATH risk** (Tasks P0.1 / 5): the single biggest unknown is whether `node` resolves in
+  the SessionStart hook's shell. `ensure_session_start_hook` bakes the absolute `$NODE_BIN` into the
+  registered command to de-risk it; Task 5 verifies empirically. If a fresh session shows no
+  reminder despite a matching file, suspect the node path first.
 - **This retires** the hand-built per-project `SessionStart` reminder hooks. The stale 2026-05-15
   blob (already deleted from `crew/.claude/settings.local.json`) was the last of its kind.
 ```
