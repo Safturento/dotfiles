@@ -28,6 +28,30 @@ The moment we decide something is worth planning — a followup graduating, a fr
 - **Keep the followup and its ticket in sync.** Once stamped, the followup and its ticket are two copies of the same pre-planning intent. If you revise one — the followup body or the ticket description — mirror the change into the other in the same pass, so their contexts never drift apart.
 - **When I ask what's queued for planning, query the tracker first** — not session memories, not the followups file. Reconcile every candidate against Jira *and* code before reporting anything as queued or done. Project-specific status names + the exact query live in that project's planning docs (for crew: `.agents/workflow.md`).
 
+## Reminders (cross-session)
+
+A reminder is a note-to-future-self that should surface at the right **time** or in the right **project**, even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook at most once per project per day (global items + items for the current repo).
+
+**Creating one.** When I say "remind me [next time in X / tomorrow / on DATE] to …" (or equivalent), write a file `~/.claude/reminders/<slug>.md`:
+
+```yaml
+name: <kebab-slug>
+scope: global | project:<name>     # project:<name> = the target repo's directory name
+due: 2026-06-09                    # optional; resolve relative dates ("tomorrow") to absolute
+created: <today>
+source_session: <this session id>
+done_when: <plain-language completion condition>   # optional but encouraged
+status: active
+```
+
+…followed by the reminder body (what to do, why, links to `[[followup-anchor]]` / `CREW-NNN` / file paths). A reminder set from one project for another is just `scope: project:<other>` — the file lives in the global store, so it surfaces there regardless of where it was authored.
+
+**Never** stash a cross-session reminder as a claude-mem memory, and **never** hand-edit a `SessionStart` hook blob in a project's `settings.local.json`. Both have silently failed before; the store + hook is the only mechanism.
+
+**Resolving one.** Proactively mark a reminder done the moment there's **concrete evidence** its work shipped — its `done_when` is satisfied, or the described task lands this session (a commit, an opened/merged PR, the edits shipping). Don't wait to be told. Move the file to `~/.claude/reminders/archive/` with `status: done`, a `resolved: <date>` line, and a one-line outcome, then report it in passing ("✓ resolved reminder `<slug>` — landed in PR #NN"). Resolve only on concrete evidence (not mere discussion); when unsure, ask. Archiving (not deleting) makes erring toward done safe.
+
+**Reviewing.** "review reminders" → discuss the surfaced set; per item act / snooze (bump `due`) / dismiss (archive). "show all reminders" → read the whole store and list global + every project's active items, bypassing the per-project filter.
+
 ## When to skip planning
 
 - Trivial fixes (one-line bug, a typo, a config tweak).
