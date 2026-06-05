@@ -10,3 +10,6 @@ fonts
 .DS_Store
 *~
 *.swp
+
+# Reminder check-in throttle state (machine-local, transient)
+claude/reminders/.state/
