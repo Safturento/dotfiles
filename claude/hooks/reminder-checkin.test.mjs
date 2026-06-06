@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   parseFrontmatter, resolveProject, loadReminders, selectReminders,
-  loadSurfaced, saveSurfaced, renderContext, runCheckin, localToday, isMainModule,
+  loadSurfaced, saveSurfaced, renderContext, renderSystemMessage, runCheckin, localToday, isMainModule,
 } from './reminder-checkin.mjs';
 
 test('parseFrontmatter parses frontmatter + body', () => {
@@ -70,7 +70,7 @@ test('runCheckin: surfaces matches once, then throttles same day', () => {
   // cwd is the temp dir (not a git repo) → project = basename(dir)
   const first = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-05' });
   assert.ok(first);
-  assert.match(first.systemMessage, /1 queued reminder/);
+  assert.match(first.systemMessage, /1 QUEUED REMINDER/);
   assert.equal(first.hookSpecificOutput.hookEventName, 'SessionStart');
   assert.match(first.hookSpecificOutput.additionalContext, /global body/);
   const second = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-05' });
@@ -81,12 +81,13 @@ test('runCheckin: a reminder added later the same day still surfaces', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rem-add-'));
   writeFileSync(join(dir, 'a.md'), '---\nname: a\nscope: global\nstatus: active\n---\nbody a');
   const first = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' });
-  assert.match(first.systemMessage, /1 queued reminder/);
+  assert.match(first.systemMessage, /1 QUEUED REMINDER/);
   // a second reminder appears after the first already surfaced today
   writeFileSync(join(dir, 'b.md'), '---\nname: b\nscope: global\nstatus: active\n---\nbody b');
   const second = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' });
   assert.ok(second, 'newly-added reminder should still surface the same day');
-  assert.match(second.systemMessage, /1 queued reminder/);
+  assert.match(second.systemMessage, /1 QUEUED REMINDER/);
+  assert.match(second.systemMessage, /\bb\b/);
   assert.match(second.hookSpecificOutput.additionalContext, /body b/);
   assert.doesNotMatch(second.hookSpecificOutput.additionalContext, /body a/);
   // nothing new left today
@@ -112,6 +113,22 @@ test('isMainModule: true through a symlink, false for an unrelated path', () => 
   assert.equal(isMainModule(link, pathToFileURL(target).href), true);
   assert.equal(isMainModule(join(dir, 'other.mjs'), pathToFileURL(target).href), false);
   assert.equal(isMainModule(undefined, pathToFileURL(target).href), false);
+});
+
+test('renderSystemMessage: count header + one named line per reminder', () => {
+  const msg = renderSystemMessage([
+    { name: 'alpha', scope: 'project:crew', due: '2026-06-06', body: '' },
+    { name: 'beta', scope: 'global', due: null, body: '' },
+  ]);
+  const lines = msg.split('\n');
+  assert.equal(lines.length, 3); // header + 2 reminders
+  assert.match(lines[0], /2 QUEUED REMINDERS/);
+  assert.match(lines[0], /review reminders/);
+  assert.match(lines[1], /alpha\b.*due 2026-06-06/);
+  assert.match(lines[2], /beta/);
+  assert.doesNotMatch(lines[2], /due/); // no due date → no "(due …)"
+  // singular header for one reminder
+  assert.match(renderSystemMessage([{ name: 'x', scope: 'global', due: null, body: '' }]), /1 QUEUED REMINDER\b/);
 });
 
 test('localToday returns YYYY-MM-DD', () => {
