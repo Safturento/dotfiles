@@ -30,7 +30,7 @@ The moment we decide something is worth planning — a followup graduating, a fr
 
 ## Reminders (cross-session)
 
-A reminder is a note-to-future-self that should surface at the right **time** or in the right **project**, even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook at most once per project per day (global items + items for the current repo).
+A reminder is a note-to-future-self that should surface at the right **time** or in the right **project**, even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook, which re-raises each due reminder at most once per project per calendar day until it's resolved or snoozed (global items + items for the current repo). When the hook surfaces reminders, raise them as the first action of the session, before engaging the user's request.
 
 **Creating one.** When I say "remind me [next time in X / tomorrow / on DATE] to …" (or equivalent), write a file `~/.claude/reminders/<slug>.md`:
 
