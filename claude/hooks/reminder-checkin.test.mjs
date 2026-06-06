@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   parseFrontmatter, resolveProject, loadReminders, selectReminders,
-  alreadyCheckedInToday, stampCheckin, renderContext, runCheckin, localToday,
+  loadSurfaced, saveSurfaced, renderContext, runCheckin, localToday, isMainModule,
 } from './reminder-checkin.mjs';
 
 test('parseFrontmatter parses frontmatter + body', () => {
@@ -47,12 +48,11 @@ test('selectReminders: scope + due + status filtering', () => {
   assert.deepEqual(got, ['c', 'g', 'past']);
 });
 
-test('throttle: stamp then detect same-day; missing state = false', () => {
+test('surfaced state: round-trips per-reminder dates; missing = {}', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rem-state-'));
-  assert.equal(alreadyCheckedInToday(dir, 'crew', '2026-06-05'), false);
-  stampCheckin(dir, 'crew', '2026-06-05');
-  assert.equal(alreadyCheckedInToday(dir, 'crew', '2026-06-05'), true);
-  assert.equal(alreadyCheckedInToday(dir, 'crew', '2026-06-06'), false);
+  assert.deepEqual(loadSurfaced(dir, 'crew'), {});
+  saveSurfaced(dir, 'crew', { a: '2026-06-06', b: '2026-06-06' });
+  assert.deepEqual(loadSurfaced(dir, 'crew'), { a: '2026-06-06', b: '2026-06-06' });
 });
 
 test('loadReminders skips README + malformed, reads valid', () => {
@@ -75,6 +75,43 @@ test('runCheckin: surfaces matches once, then throttles same day', () => {
   assert.match(first.hookSpecificOutput.additionalContext, /global body/);
   const second = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-05' });
   assert.equal(second, null);
+});
+
+test('runCheckin: a reminder added later the same day still surfaces', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-add-'));
+  writeFileSync(join(dir, 'a.md'), '---\nname: a\nscope: global\nstatus: active\n---\nbody a');
+  const first = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' });
+  assert.match(first.systemMessage, /1 queued reminder/);
+  // a second reminder appears after the first already surfaced today
+  writeFileSync(join(dir, 'b.md'), '---\nname: b\nscope: global\nstatus: active\n---\nbody b');
+  const second = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' });
+  assert.ok(second, 'newly-added reminder should still surface the same day');
+  assert.match(second.systemMessage, /1 queued reminder/);
+  assert.match(second.hookSpecificOutput.additionalContext, /body b/);
+  assert.doesNotMatch(second.hookSpecificOutput.additionalContext, /body a/);
+  // nothing new left today
+  assert.equal(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }), null);
+});
+
+test('runCheckin: re-surfaces the next day', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-day-'));
+  writeFileSync(join(dir, 'g.md'), '---\nname: g\nscope: global\nstatus: active\n---\nbody');
+  assert.ok(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }));
+  assert.equal(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }), null);
+  assert.ok(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-07' }), 'should re-surface next day');
+});
+
+test('isMainModule: true through a symlink, false for an unrelated path', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-main-'));
+  const target = join(dir, 'real.mjs');
+  const link = join(dir, 'link.mjs');
+  writeFileSync(target, '// target');
+  symlinkSync(target, link);
+  // Invoked as `node <link>` while import.meta.url resolves to the target —
+  // the exact shape that broke the naive guard.
+  assert.equal(isMainModule(link, pathToFileURL(target).href), true);
+  assert.equal(isMainModule(join(dir, 'other.mjs'), pathToFileURL(target).href), false);
+  assert.equal(isMainModule(undefined, pathToFileURL(target).href), false);
 });
 
 test('localToday returns YYYY-MM-DD', () => {
