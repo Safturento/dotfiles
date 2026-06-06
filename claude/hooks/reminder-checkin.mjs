@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // reminder-checkin.mjs — global SessionStart hook.
-// Surfaces queued reminders (global + current project) at most once per project
-// per calendar day. Dependency-free: Node builtins only. Fails open / silent so a
-// reminder problem can never break session startup.
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+// Surfaces queued reminders (global + current project), re-raising each one at
+// most once per calendar day per project until it's resolved or snoozed.
+// Dependency-free: Node builtins only. Fails open / silent so a reminder problem
+// can never break session startup.
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { join, dirname, basename, isAbsolute } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
 export function localToday(d = new Date()) {
@@ -71,26 +73,32 @@ export function selectReminders(reminders, project, today) {
   );
 }
 
-export function alreadyCheckedInToday(stateDir, project, today) {
+/**
+ * Per-reminder, per-project throttle state: `{ surfaced: { <name>: <YYYY-MM-DD> } }`.
+ * A reminder re-surfaces once per calendar day until it's resolved (status flips
+ * off `active`, so it leaves `selectReminders`) or snoozed (due bumped to a future
+ * date). Reading a missing/garbage file fails open to an empty map.
+ */
+export function loadSurfaced(stateDir, project) {
   try {
     const s = JSON.parse(readFileSync(join(stateDir, `checkin-${project}.json`), 'utf8'));
-    return s.lastCheckin === today;
+    return s && typeof s.surfaced === 'object' && s.surfaced ? s.surfaced : {};
   } catch {
-    return false; // fail open
+    return {};
   }
 }
 
-export function stampCheckin(stateDir, project, today) {
+export function saveSurfaced(stateDir, project, surfaced) {
   try {
     mkdirSync(stateDir, { recursive: true });
-    writeFileSync(join(stateDir, `checkin-${project}.json`), JSON.stringify({ lastCheckin: today }) + '\n');
+    writeFileSync(join(stateDir, `checkin-${project}.json`), JSON.stringify({ surfaced }) + '\n');
   } catch { /* non-fatal */ }
 }
 
 export function renderContext(matched) {
   const lines = [
     '# Queued reminders', '',
-    'Reminders queued for this session (global + this project). Raise the relevant ones with the user. If a reminder\'s work has demonstrably shipped this session, resolve it (archive + report).', '',
+    'Queued reminders for this session (global + this project). **Surface these to the user as your first action this session — before engaging their request — then proceed.** Raise the relevant ones; if a reminder\'s work has demonstrably shipped this session, resolve it (archive + report).', '',
   ];
   for (const r of matched) {
     lines.push(`## ${r.name}  (${r.scope}${r.due ? `, due ${r.due}` : ''})`);
@@ -102,14 +110,36 @@ export function renderContext(matched) {
 export function runCheckin({ remindersDir, cwd, today }) {
   const project = resolveProject(cwd);
   const stateDir = join(remindersDir, '.state');
-  if (alreadyCheckedInToday(stateDir, project, today)) return null;
-  const matched = selectReminders(loadReminders(remindersDir), project, today);
+  const surfaced = loadSurfaced(stateDir, project);
+  const due = selectReminders(loadReminders(remindersDir), project, today);
+  // Re-raise each due reminder at most once per calendar day. A reminder added
+  // later in the day still surfaces even if an earlier one already did today.
+  const matched = due.filter((r) => surfaced[r.name] !== today);
   if (matched.length === 0) return null;
-  stampCheckin(stateDir, project, today);
+  // Persist today's surfacing, pruned to the currently-due set so resolved /
+  // removed reminders don't accumulate in the state file.
+  const next = {};
+  for (const r of due) next[r.name] = today;
+  saveSurfaced(stateDir, project, next);
   return {
     systemMessage: `📌 ${matched.length} queued reminder${matched.length > 1 ? 's' : ''} — say "review reminders" to discuss`,
     hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: renderContext(matched) },
   };
+}
+
+/**
+ * True when this module is the process entry point. Robust to symlinks: the hook
+ * is installed as `~/.claude/hooks/reminder-checkin.mjs` symlinked into the
+ * dotfiles repo, so `process.argv[1]` is the symlink path while `import.meta.url`
+ * is the resolved target — a naive `import.meta.url === file://argv[1]` compare
+ * fails and `main()` never runs. Compare real paths instead.
+ */
+export function isMainModule(argv1, metaUrl) {
+  try {
+    return !!argv1 && realpathSync(argv1) === realpathSync(fileURLToPath(metaUrl));
+  } catch {
+    return false;
+  }
 }
 
 function main() {
@@ -122,6 +152,6 @@ function main() {
   if (out) process.stdout.write(JSON.stringify(out));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule(process.argv[1], import.meta.url)) {
   try { main(); } catch { /* fail silent, exit 0 */ }
 }
