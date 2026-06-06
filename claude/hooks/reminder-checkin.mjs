@@ -95,14 +95,29 @@ export function saveSurfaced(stateDir, project, surfaced) {
   } catch { /* non-fatal */ }
 }
 
+/** First non-empty line of a reminder body, truncated — enough to raise it by
+ *  name without dumping the whole body into every session's context. */
+export function firstLine(body, max = 200) {
+  for (const ln of (body || '').split('\n')) {
+    const t = ln.trim();
+    if (t) return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+  }
+  return '';
+}
+
+/**
+ * Compact summary — one line per reminder (name, scope/due, gist, file path).
+ * Deliberately NOT the full bodies: dumping them bloats every session's context
+ * and overflows the hook-output size cap. Read the named file before acting.
+ */
 export function renderContext(matched) {
   const lines = [
     '# Queued reminders', '',
-    'Queued reminders for this session (global + this project). **Surface these to the user as your first action this session — before engaging their request — then proceed.** Raise the relevant ones; if a reminder\'s work has demonstrably shipped this session, resolve it (archive + report).', '',
+    'Raise these with the user as your first action this session, before engaging their request. Summaries only — read the full file before acting on one, and resolve (archive + report) any whose work has demonstrably shipped.', '',
   ];
   for (const r of matched) {
-    lines.push(`## ${r.name}  (${r.scope}${r.due ? `, due ${r.due}` : ''})`);
-    lines.push(r.body, '');
+    lines.push(`- **${r.name}** (${r.scope}${r.due ? `, due ${r.due}` : ''}) — ${firstLine(r.body)}`);
+    lines.push(`  full text: ~/.claude/reminders/${r.file}`);
   }
   return lines.join('\n').trim();
 }
