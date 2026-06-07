@@ -122,6 +122,20 @@ export function renderContext(matched) {
   return lines.join('\n').trim();
 }
 
+/**
+ * The user-visible nudge. Claude Code renders a hook's systemMessage in muted
+ * gray and it can't be recolored from here (embedded ANSI is unreliable), so
+ * prominence comes from structure: an emoji-led ALL-CAPS header plus each
+ * reminder name (+ due) on its own emoji-led line. Emoji glyphs render in color
+ * even when the surrounding text is gray, so the block stands out at a glance.
+ */
+export function renderSystemMessage(matched) {
+  const n = matched.length;
+  const head = `📌 ${n} QUEUED REMINDER${n > 1 ? 'S' : ''} — say "review reminders" to act on them:`;
+  const items = matched.map((r) => `   📌 ${r.name}${r.due ? `  (due ${r.due})` : ''}`);
+  return [head, ...items].join('\n');
+}
+
 export function runCheckin({ remindersDir, cwd, today }) {
   const project = resolveProject(cwd);
   const stateDir = join(remindersDir, '.state');
@@ -137,7 +151,7 @@ export function runCheckin({ remindersDir, cwd, today }) {
   for (const r of due) next[r.name] = today;
   saveSurfaced(stateDir, project, next);
   return {
-    systemMessage: `📌 ${matched.length} queued reminder${matched.length > 1 ? 's' : ''} — say "review reminders" to discuss`,
+    systemMessage: renderSystemMessage(matched),
     hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: renderContext(matched) },
   };
 }
