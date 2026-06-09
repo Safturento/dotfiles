@@ -30,14 +30,16 @@ The moment we decide something is worth planning — a followup graduating, a fr
 
 ## Reminders (cross-session)
 
-A reminder is a note-to-future-self that should surface at the right **time** or in the right **project**, even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook, which re-raises each due reminder at most once per project per calendar day until it's resolved or snoozed (global items + items for the current repo). When the hook surfaces reminders, raise them as the first action of the session, before engaging the user's request.
+A reminder is a note-to-future-self that should surface in the right **project** (or globally), even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook. The store is a **living queue**: every active item (global + items for the current repo) surfaces at the start of *every* session — no per-day throttle, no hiding until a date. Items leave the queue only by being archived. When the hook surfaces reminders, raise them as the first action of the session, before engaging the user's request.
+
+`due` is a **deadline / priority signal, not a visibility gate.** Most items have no `due` and just ride the queue, getting pushed back session after session until done — that's expected. Set `due` only when something genuinely must happen by a specific date. Dated items sort to the top (soonest first, then undated) and a passed deadline is flagged `OVERDUE` — meaning: do these before the undated ones, don't ignore them until the date arrives.
 
 **Creating one.** When I say "remind me [next time in X / tomorrow / on DATE] to …" (or equivalent), write a file `~/.claude/reminders/<slug>.md`:
 
 ```yaml
 name: <kebab-slug>
 scope: global | project:<name>     # project:<name> = the target repo's directory name
-due: 2026-06-09                    # optional; resolve relative dates ("tomorrow") to absolute
+due: 2026-06-09                    # OPTIONAL deadline only — omit for ordinary queue items. Set just when there's a real do-by date (resolve "tomorrow"/"Friday" to absolute); dated items sort first + flag OVERDUE. NOT a hide-until date.
 created: <today>
 source_session: <this session id>
 done_when: <plain-language completion condition>   # optional but encouraged
@@ -50,7 +52,7 @@ status: active
 
 **Resolving one.** Proactively mark a reminder done the moment there's **concrete evidence** its work shipped — its `done_when` is satisfied, or the described task lands this session (a commit, an opened/merged PR, the edits shipping). Don't wait to be told. Move the file to `~/.claude/reminders/archive/` with `status: done`, a `resolved: <date>` line, and a one-line outcome, then report it in passing ("✓ resolved reminder `<slug>` — landed in PR #NN"). Resolve only on concrete evidence (not mere discussion); when unsure, ask. Archiving (not deleting) makes erring toward done safe.
 
-**Reviewing.** "review reminders" → discuss the surfaced set; per item act / snooze (bump `due`) / dismiss (archive). "show all reminders" → read the whole store and list global + every project's active items, bypassing the per-project filter.
+**Reviewing.** "review reminders" → discuss the surfaced set; per item act / defer (leave it — the queue re-raises it next session) / reprioritize (set or clear `due`) / dismiss (archive — the only way to stop an item resurfacing). "show all reminders" → read the whole store and list global + every project's active items, bypassing the per-project filter.
 
 ## When to skip planning
 

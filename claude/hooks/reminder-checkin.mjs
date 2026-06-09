@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // reminder-checkin.mjs — global SessionStart hook.
-// Surfaces queued reminders (global + current project), re-raising each one at
-// most once per calendar day per project until it's resolved or snoozed.
+// Surfaces queued reminders (global + current project) at the start of every
+// session — the store is a living queue, so an item shows every time until it's
+// resolved (archived). `due` is a priority signal, not a visibility gate: dated
+// items sort to the top (soonest/overdue first), undated items follow.
 // Dependency-free: Node builtins only. Fails open / silent so a reminder problem
 // can never break session startup.
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, realpathSync } from 'node:fs';
 import { join, dirname, basename, isAbsolute } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -65,34 +67,24 @@ export function loadReminders(dir) {
   return out;
 }
 
-export function selectReminders(reminders, project, today) {
-  return reminders.filter((r) =>
-    r.status === 'active' &&
-    (r.scope === 'global' || r.scope === `project:${project}`) &&
-    (!r.due || r.due <= today),
-  );
-}
-
 /**
- * Per-reminder, per-project throttle state: `{ surfaced: { <name>: <YYYY-MM-DD> } }`.
- * A reminder re-surfaces once per calendar day until it's resolved (status flips
- * off `active`, so it leaves `selectReminders`) or snoozed (due bumped to a future
- * date). Reading a missing/garbage file fails open to an empty map.
+ * Active, in-scope reminders, ordered by priority. `due` is a deadline, not a
+ * gate — every active item surfaces regardless of date. Dated items sort first
+ * (ascending, so overdue/soonest lead); undated items keep their file order
+ * after. The living queue stays visible every session until items are archived.
  */
-export function loadSurfaced(stateDir, project) {
-  try {
-    const s = JSON.parse(readFileSync(join(stateDir, `checkin-${project}.json`), 'utf8'));
-    return s && typeof s.surfaced === 'object' && s.surfaced ? s.surfaced : {};
-  } catch {
-    return {};
-  }
-}
-
-export function saveSurfaced(stateDir, project, surfaced) {
-  try {
-    mkdirSync(stateDir, { recursive: true });
-    writeFileSync(join(stateDir, `checkin-${project}.json`), JSON.stringify({ surfaced }) + '\n');
-  } catch { /* non-fatal */ }
+export function selectReminders(reminders, project) {
+  return reminders
+    .filter((r) =>
+      r.status === 'active' &&
+      (r.scope === 'global' || r.scope === `project:${project}`),
+    )
+    .sort((a, b) => {
+      if (a.due && b.due) return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+      if (a.due) return -1; // dated before undated
+      if (b.due) return 1;
+      return 0; // both undated → stable (file order)
+    });
 }
 
 /** First non-empty line of a reminder body, truncated — enough to raise it by
@@ -105,18 +97,26 @@ export function firstLine(body, max = 200) {
   return '';
 }
 
+/** Human-readable due suffix, e.g. ` due 2026-06-09` or ` due 2026-06-09 — OVERDUE`.
+ *  Empty for undated reminders. `today` lets us flag a passed deadline. */
+export function dueLabel(due, today) {
+  if (!due) return '';
+  return today && due < today ? ` due ${due} — OVERDUE` : ` due ${due}`;
+}
+
 /**
  * Compact summary — one line per reminder (name, scope/due, gist, file path).
  * Deliberately NOT the full bodies: dumping them bloats every session's context
  * and overflows the hook-output size cap. Read the named file before acting.
  */
-export function renderContext(matched) {
+export function renderContext(matched, today) {
   const lines = [
     '# Queued reminders', '',
     'Raise these with the user as your first action this session, before engaging their request. Summaries only — read the full file before acting on one, and resolve (archive + report) any whose work has demonstrably shipped.', '',
   ];
   for (const r of matched) {
-    lines.push(`- **${r.name}** (${r.scope}${r.due ? `, due ${r.due}` : ''}) — ${firstLine(r.body)}`);
+    const dl = dueLabel(r.due, today);
+    lines.push(`- **${r.name}** (${r.scope}${dl ? `,${dl}` : ''}) — ${firstLine(r.body)}`);
     lines.push(`  full text: ~/.claude/reminders/${r.file}`);
   }
   return lines.join('\n').trim();
@@ -129,30 +129,25 @@ export function renderContext(matched) {
  * reminder name (+ due) on its own emoji-led line. Emoji glyphs render in color
  * even when the surrounding text is gray, so the block stands out at a glance.
  */
-export function renderSystemMessage(matched) {
+export function renderSystemMessage(matched, today) {
   const n = matched.length;
   const head = `📌 ${n} QUEUED REMINDER${n > 1 ? 'S' : ''} — say "review reminders" to act on them:`;
-  const items = matched.map((r) => `   📌 ${r.name}${r.due ? `  (due ${r.due})` : ''}`);
+  const items = matched.map((r) => {
+    const dl = dueLabel(r.due, today);
+    return `   📌 ${r.name}${dl ? ` (${dl.trim()})` : ''}`;
+  });
   return [head, ...items].join('\n');
 }
 
 export function runCheckin({ remindersDir, cwd, today }) {
   const project = resolveProject(cwd);
-  const stateDir = join(remindersDir, '.state');
-  const surfaced = loadSurfaced(stateDir, project);
-  const due = selectReminders(loadReminders(remindersDir), project, today);
-  // Re-raise each due reminder at most once per calendar day. A reminder added
-  // later in the day still surfaces even if an earlier one already did today.
-  const matched = due.filter((r) => surfaced[r.name] !== today);
+  // The queue surfaces in full every session — no per-day throttle. Items leave
+  // only by being archived (status flips off `active`, so they drop out here).
+  const matched = selectReminders(loadReminders(remindersDir), project);
   if (matched.length === 0) return null;
-  // Persist today's surfacing, pruned to the currently-due set so resolved /
-  // removed reminders don't accumulate in the state file.
-  const next = {};
-  for (const r of due) next[r.name] = today;
-  saveSurfaced(stateDir, project, next);
   return {
-    systemMessage: renderSystemMessage(matched),
-    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: renderContext(matched) },
+    systemMessage: renderSystemMessage(matched, today),
+    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: renderContext(matched, today) },
   };
 }
 
