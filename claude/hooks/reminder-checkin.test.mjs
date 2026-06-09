@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   parseFrontmatter, resolveProject, loadReminders, selectReminders,
-  loadSurfaced, saveSurfaced, renderContext, renderSystemMessage, runCheckin, localToday, isMainModule,
+  dueLabel, renderContext, renderSystemMessage, runCheckin, localToday, isMainModule,
 } from './reminder-checkin.mjs';
 
 test('parseFrontmatter parses frontmatter + body', () => {
@@ -35,7 +35,7 @@ test('resolveProject: not a git repo → basename(cwd)', () => {
   assert.equal(resolveProject('/home/u/loosedir', fake), 'loosedir');
 });
 
-test('selectReminders: scope + due + status filtering', () => {
+test('selectReminders: scope + status filtering, due is NOT a gate', () => {
   const rs = [
     { name: 'g', scope: 'global', due: null, status: 'active', body: '' },
     { name: 'c', scope: 'project:crew', due: null, status: 'active', body: '' },
@@ -44,15 +44,17 @@ test('selectReminders: scope + due + status filtering', () => {
     { name: 'past', scope: 'global', due: '2000-01-01', status: 'active', body: '' },
     { name: 'done', scope: 'global', due: null, status: 'done', body: '' },
   ];
-  const got = selectReminders(rs, 'crew', '2026-06-05').map((r) => r.name).sort();
-  assert.deepEqual(got, ['c', 'g', 'past']);
+  // other-project + done dropped; future-dated NO LONGER filtered out.
+  const got = selectReminders(rs, 'crew').map((r) => r.name);
+  // dated items lead (ascending), then undated in file order.
+  assert.deepEqual(got, ['past', 'future', 'g', 'c']);
 });
 
-test('surfaced state: round-trips per-reminder dates; missing = {}', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'rem-state-'));
-  assert.deepEqual(loadSurfaced(dir, 'crew'), {});
-  saveSurfaced(dir, 'crew', { a: '2026-06-06', b: '2026-06-06' });
-  assert.deepEqual(loadSurfaced(dir, 'crew'), { a: '2026-06-06', b: '2026-06-06' });
+test('dueLabel: empty when undated, OVERDUE when due < today', () => {
+  assert.equal(dueLabel(null, '2026-06-08'), '');
+  assert.equal(dueLabel('2026-06-09', '2026-06-08'), ' due 2026-06-09');
+  assert.equal(dueLabel('2026-06-08', '2026-06-08'), ' due 2026-06-08'); // due today ≠ overdue
+  assert.equal(dueLabel('2026-06-07', '2026-06-08'), ' due 2026-06-07 — OVERDUE');
 });
 
 test('loadReminders skips README + malformed, reads valid', () => {
@@ -64,7 +66,7 @@ test('loadReminders skips README + malformed, reads valid', () => {
   assert.equal(got[0].name, 'a');
 });
 
-test('runCheckin: surfaces matches once, then throttles same day', () => {
+test('runCheckin: surfaces the full queue every session (no throttle)', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rem-run-'));
   writeFileSync(join(dir, 'g.md'), '---\nname: g\nscope: global\nstatus: active\n---\nglobal body');
   // cwd is the temp dir (not a git repo) → project = basename(dir)
@@ -73,33 +75,25 @@ test('runCheckin: surfaces matches once, then throttles same day', () => {
   assert.match(first.systemMessage, /1 QUEUED REMINDER/);
   assert.equal(first.hookSpecificOutput.hookEventName, 'SessionStart');
   assert.match(first.hookSpecificOutput.additionalContext, /global body/);
+  // same session params again → still surfaces (the queue is not throttled).
   const second = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-05' });
-  assert.equal(second, null);
-});
-
-test('runCheckin: a reminder added later the same day still surfaces', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'rem-add-'));
-  writeFileSync(join(dir, 'a.md'), '---\nname: a\nscope: global\nstatus: active\n---\nbody a');
-  const first = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' });
-  assert.match(first.systemMessage, /1 QUEUED REMINDER/);
-  // a second reminder appears after the first already surfaced today
-  writeFileSync(join(dir, 'b.md'), '---\nname: b\nscope: global\nstatus: active\n---\nbody b');
-  const second = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' });
-  assert.ok(second, 'newly-added reminder should still surface the same day');
+  assert.ok(second, 'queue should re-surface every session, not once per day');
   assert.match(second.systemMessage, /1 QUEUED REMINDER/);
-  assert.match(second.systemMessage, /\bb\b/);
-  assert.match(second.hookSpecificOutput.additionalContext, /body b/);
-  assert.doesNotMatch(second.hookSpecificOutput.additionalContext, /body a/);
-  // nothing new left today
-  assert.equal(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }), null);
 });
 
-test('runCheckin: re-surfaces the next day', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'rem-day-'));
-  writeFileSync(join(dir, 'g.md'), '---\nname: g\nscope: global\nstatus: active\n---\nbody');
-  assert.ok(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }));
+test('runCheckin: returns null only when the queue is empty', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-empty-'));
   assert.equal(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }), null);
-  assert.ok(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-07' }), 'should re-surface next day');
+  writeFileSync(join(dir, 'a.md'), '---\nname: a\nscope: global\nstatus: active\n---\nbody a');
+  assert.ok(runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-06' }));
+});
+
+test('runCheckin: flags an overdue item in the surfaced output', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-overdue-'));
+  writeFileSync(join(dir, 'g.md'), '---\nname: g\nscope: global\ndue: 2026-06-01\nstatus: active\n---\nbody');
+  const out = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-08' });
+  assert.match(out.systemMessage, /OVERDUE/);
+  assert.match(out.hookSpecificOutput.additionalContext, /OVERDUE/);
 });
 
 test('isMainModule: true through a symlink, false for an unrelated path', () => {
