@@ -18,7 +18,8 @@ Topic docs live in `.agents/`. Load one when your work matches its row.
 
 | Doing | Read |
 | ----- | ---- |
-| _(none yet — add rows as `.agents/<topic>.md` docs are created)_ | |
+| Planning, tickets, followups, specs/plans, branching | `.agents/workflow.md` |
+| _(add rows as further `.agents/<topic>.md` docs are created)_ | |
 
 See [`.agents/README.md`](.agents/README.md) for how this system works and how to extend it.
 

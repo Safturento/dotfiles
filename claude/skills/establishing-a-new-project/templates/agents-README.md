@@ -116,4 +116,4 @@ Add a row here for each `.agents/<topic>.md` as you create it (mirror of the roo
 
 | Topic | Description |
 |-------|-------------|
-| _(none yet)_ | |
+| workflow | Planning workflow, tickets, followups, specs/plans, branching — repo-specific overlay on user-level `~/.claude/CLAUDE.md` |
