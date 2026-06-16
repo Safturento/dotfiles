@@ -10,3 +10,11 @@ fonts
 .DS_Store
 *~
 *.swp
+
+# Cross-session reminder queue — local-only. Reminders must survive branch
+# switches and we never reference them from git history, so their content stays
+# untracked. README + archive/.gitkeep stay tracked so the dirs exist on a fresh
+# checkout (the ~/.claude/reminders symlink would dangle otherwise).
+claude/reminders/*.md
+!claude/reminders/README.md
+claude/reminders/archive/*.md
