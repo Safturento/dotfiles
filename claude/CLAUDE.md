@@ -19,6 +19,23 @@ The boundary: you do the **planning** end-to-end, and you stop at the planning/t
 
 I've been burned by autonomous "let me just keep going" execution that landed code I didn't review against. Tickets + an explicit go-signal are the gate. They also make work resumable across sessions: the Epic + tickets survive a terminal crash; in-flight subagent state does not.
 
+## Interactive tickets (work that can't run via `crew run`)
+
+Some planned work gets **ticketed normally** — Epic + child tickets, dependency links, the whole planning flow above — but **cannot run through autonomous `crew run` dispatch** because it has to be driven live in an interactive session with me. Common cases:
+
+- Work driven through a **desktop-app MCP that only works in-session** — e.g. Fusion (the Fusion MCP needs the live app + my watching the geometry), Figma writes via the Figma MCP.
+- **Visual / iterative design work** where I'm the visual judge and need to see each phase rendered and redirect.
+- **Skill authoring / migration** (the dispatch sandbox masks a project's own `.claude/skills/` read-only — only an interactive Write escapes it).
+- Any build where the value is in me watching and steering each step, not a clean autonomous worktree run.
+
+**Mark these so the trigger is unambiguous:**
+
+- **Add the `interactive` label** to the Jira ticket(s) (Epic and the affected children).
+- In the Epic's parallelism plan, state it in words too: "driven live in session, not `crew run`."
+- The go-signal becomes **me telling you to start in-session, ticket by ticket** — not `crew run <KEY>`. Everything else is unchanged: still brainstorm → spec → plan → Epic + children → **stop and wait for my go-signal**.
+
+This sits between the two existing poles: a normal `crew run` ticket (autonomous) and "Don't ticket — handle manually" (`~/.claude/**` deliverables, no ticket at all). An interactive ticket is **tracked like the former but triggered like the latter** — real Jira scope that survives a crash, but executed by us together.
+
 ## Park planning intentions in Jira, not memory
 
 The moment we decide something is worth planning — a followup graduating, a fresh scope, a "we should plan X" — create the Jira artifact immediately. Don't cache the intention in a session memory or leave it only in a followups file. Memories are point-in-time snapshots with no verification loop; they get recalled and quoted back stale long after the work has shipped (I have been burned by exactly this: answering "what's queued for planning?" from a two-week-old memory whose items had already shipped under tickets I didn't check). Jira is the trackable source of truth.
