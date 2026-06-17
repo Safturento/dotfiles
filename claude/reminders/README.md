@@ -18,7 +18,13 @@ symlink would dangle otherwise).
 
 ## Frontmatter
 
-```yaml
+The file **must** begin with a `---` fence and close the frontmatter with another
+`---` before the body. The hook parses only fenced frontmatter — a fence-less file
+is skipped (never reaches the queue) and surfaces as a `⚠️ MALFORMED REMINDER FILE`
+warning at SessionStart until fixed.
+
+```markdown
+---
 name: <kebab-slug>
 scope: global | project:<name>
 due: 2026-06-09            # optional deadline only; dated items sort first + flag OVERDUE. NOT a hide-until date.
@@ -26,4 +32,7 @@ created: 2026-06-05
 source_session: <id>
 done_when: <completion condition>   # optional
 status: active            # active | done
+---
+
+<the reminder body goes here>
 ```

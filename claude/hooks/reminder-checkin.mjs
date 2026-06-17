@@ -46,16 +46,36 @@ export function resolveProject(cwd, runGit = defaultRunGit) {
   }
 }
 
-export function loadReminders(dir) {
+/**
+ * Read the whole store, separating well-formed reminders from malformed
+ * candidates. A file is "malformed" when it is not the store's own README yet
+ * fails to parse as a fenced-frontmatter reminder — either it is missing the
+ * `---` fences entirely (the common slip: an agent copies the YAML template
+ * without the fences) or it is fenced but lacks the required `scope:` field.
+ * Surfacing these loudly is the whole point of the validation pass: a
+ * silently-dropped reminder is a silently-lost task. Returns
+ * `{ reminders, malformed }`, where `malformed` is `{ file, reason }[]`.
+ */
+export function readStore(dir) {
   let entries;
-  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return []; }
-  const out = [];
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return { reminders: [], malformed: [] }; }
+  const reminders = [];
+  const malformed = [];
   for (const e of entries) {
     if (!e.isFile() || !e.name.endsWith('.md')) continue;
-    let parsed;
-    try { parsed = parseFrontmatter(readFileSync(join(dir, e.name), 'utf8')); } catch { continue; }
-    if (!parsed || !parsed.data.scope) continue; // skips README + malformed
-    out.push({
+    if (e.name.toLowerCase() === 'readme.md') continue; // the store's own README, not a reminder
+    let text;
+    try { text = readFileSync(join(dir, e.name), 'utf8'); } catch { continue; }
+    const parsed = parseFrontmatter(text);
+    if (!parsed) {
+      malformed.push({ file: e.name, reason: 'missing `---` frontmatter fences' });
+      continue;
+    }
+    if (!parsed.data.scope) {
+      malformed.push({ file: e.name, reason: 'frontmatter missing required `scope:` field' });
+      continue;
+    }
+    reminders.push({
       name: parsed.data.name || e.name.replace(/\.md$/, ''),
       scope: parsed.data.scope,
       due: parsed.data.due || null,
@@ -64,7 +84,12 @@ export function loadReminders(dir) {
       file: e.name,
     });
   }
-  return out;
+  return { reminders, malformed };
+}
+
+/** Back-compat thin wrapper: just the well-formed reminders. */
+export function loadReminders(dir) {
+  return readStore(dir).reminders;
 }
 
 /**
@@ -109,17 +134,31 @@ export function dueLabel(due, today) {
  * Deliberately NOT the full bodies: dumping them bloats every session's context
  * and overflows the hook-output size cap. Read the named file before acting.
  */
-export function renderContext(matched, today) {
-  const lines = [
-    '# Queued reminders', '',
-    'Raise these with the user as your first action this session, before engaging their request. Summaries only — read the full file before acting on one, and resolve (archive + report) any whose work has demonstrably shipped.', '',
-  ];
-  for (const r of matched) {
-    const dl = dueLabel(r.due, today);
-    lines.push(`- **${r.name}** (${r.scope}${dl ? `,${dl}` : ''}) — ${firstLine(r.body)}`);
-    lines.push(`  full text: ~/.claude/reminders/${r.file}`);
+export function renderContext(matched, today, malformed = []) {
+  const sections = [];
+  if (matched.length) {
+    const lines = [
+      '# Queued reminders', '',
+      'Raise these with the user as your first action this session, before engaging their request. Summaries only — read the full file before acting on one, and resolve (archive + report) any whose work has demonstrably shipped.', '',
+    ];
+    for (const r of matched) {
+      const dl = dueLabel(r.due, today);
+      lines.push(`- **${r.name}** (${r.scope}${dl ? `,${dl}` : ''}) — ${firstLine(r.body)}`);
+      lines.push(`  full text: ~/.claude/reminders/${r.file}`);
+    }
+    sections.push(lines.join('\n').trim());
   }
-  return lines.join('\n').trim();
+  if (malformed.length) {
+    const lines = [
+      '# ⚠️ Malformed reminder files', '',
+      'These files are in the reminders store but were SKIPPED — they never reached the queue, so whatever task they hold is currently invisible. Tell the user, then fix each one: every reminder must begin with a `---` fence, carry a YAML frontmatter block with at least a `scope:` field, and close the block with a `---` fence before the body. Re-run the hook (or start a fresh session) to confirm they parse.', '',
+    ];
+    for (const m of malformed) {
+      lines.push(`- \`~/.claude/reminders/${m.file}\` — ${m.reason}`);
+    }
+    sections.push(lines.join('\n').trim());
+  }
+  return sections.join('\n\n').trim();
 }
 
 /**
@@ -129,25 +168,38 @@ export function renderContext(matched, today) {
  * reminder name (+ due) on its own emoji-led line. Emoji glyphs render in color
  * even when the surrounding text is gray, so the block stands out at a glance.
  */
-export function renderSystemMessage(matched, today) {
-  const n = matched.length;
-  const head = `📌 ${n} QUEUED REMINDER${n > 1 ? 'S' : ''} — say "review reminders" to act on them:`;
-  const items = matched.map((r) => {
-    const dl = dueLabel(r.due, today);
-    return `   📌 ${r.name}${dl ? ` (${dl.trim()})` : ''}`;
-  });
-  return [head, ...items].join('\n');
+export function renderSystemMessage(matched, today, malformed = []) {
+  const lines = [];
+  if (matched.length) {
+    const n = matched.length;
+    lines.push(`📌 ${n} QUEUED REMINDER${n > 1 ? 'S' : ''} — say "review reminders" to act on them:`);
+    for (const r of matched) {
+      const dl = dueLabel(r.due, today);
+      lines.push(`   📌 ${r.name}${dl ? ` (${dl.trim()})` : ''}`);
+    }
+  }
+  if (malformed.length) {
+    const n = malformed.length;
+    lines.push(`⚠️ ${n} MALFORMED REMINDER FILE${n > 1 ? 'S' : ''} skipped (not in the queue) — needs fixing:`);
+    for (const m of malformed) {
+      lines.push(`   ⚠️ ${m.file} — ${m.reason}`);
+    }
+  }
+  return lines.join('\n');
 }
 
 export function runCheckin({ remindersDir, cwd, today }) {
   const project = resolveProject(cwd);
   // The queue surfaces in full every session — no per-day throttle. Items leave
   // only by being archived (status flips off `active`, so they drop out here).
-  const matched = selectReminders(loadReminders(remindersDir), project);
-  if (matched.length === 0) return null;
+  // Malformed files never make it into the queue, so we surface them separately
+  // rather than letting a formatting slip silently swallow a task.
+  const { reminders, malformed } = readStore(remindersDir);
+  const matched = selectReminders(reminders, project);
+  if (matched.length === 0 && malformed.length === 0) return null;
   return {
-    systemMessage: renderSystemMessage(matched, today),
-    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: renderContext(matched, today) },
+    systemMessage: renderSystemMessage(matched, today, malformed),
+    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: renderContext(matched, today, malformed) },
   };
 }
 
