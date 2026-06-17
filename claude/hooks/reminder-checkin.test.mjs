@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  parseFrontmatter, resolveProject, loadReminders, selectReminders,
+  parseFrontmatter, resolveProject, loadReminders, readStore, selectReminders,
   dueLabel, renderContext, renderSystemMessage, runCheckin, localToday, isMainModule,
 } from './reminder-checkin.mjs';
 
@@ -64,6 +64,43 @@ test('loadReminders skips README + malformed, reads valid', () => {
   const got = loadReminders(dir);
   assert.equal(got.length, 1);
   assert.equal(got[0].name, 'a');
+});
+
+test('readStore: flags fence-less + scope-less files as malformed, never the README', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-store-'));
+  writeFileSync(join(dir, 'README.md'), '# store readme\n\n```yaml\nscope: global\n```'); // not a reminder despite a scope: line
+  writeFileSync(join(dir, 'ok.md'), '---\nname: ok\nscope: global\nstatus: active\n---\nbody');
+  writeFileSync(join(dir, 'no-fence.md'), 'name: nf\nscope: project:crew\nstatus: active\n\nbody'); // the exact slip we saw
+  writeFileSync(join(dir, 'no-scope.md'), '---\nname: ns\nstatus: active\n---\nbody');
+  const { reminders, malformed } = readStore(dir);
+  assert.deepEqual(reminders.map((r) => r.name), ['ok']);
+  const byFile = Object.fromEntries(malformed.map((m) => [m.file, m.reason]));
+  assert.match(byFile['no-fence.md'], /frontmatter fences/);
+  assert.match(byFile['no-scope.md'], /scope/);
+  assert.ok(!('README.md' in byFile), 'README must never be flagged as malformed');
+});
+
+test('runCheckin: surfaces malformed files even when the queue is otherwise empty', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-malformed-'));
+  // a fence-less file is the only thing in the store → nothing reaches the queue
+  writeFileSync(join(dir, 'broken.md'), 'name: broken\nscope: global\nstatus: active\n\nbody');
+  const out = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-17' });
+  assert.ok(out, 'malformed files must surface even with an empty queue');
+  assert.match(out.systemMessage, /1 MALFORMED REMINDER FILE/);
+  assert.match(out.systemMessage, /broken\.md/);
+  assert.match(out.hookSpecificOutput.additionalContext, /Malformed reminder files/);
+  assert.match(out.hookSpecificOutput.additionalContext, /broken\.md/);
+});
+
+test('runCheckin: renders queue AND malformed sections together', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-both-'));
+  writeFileSync(join(dir, 'g.md'), '---\nname: g\nscope: global\nstatus: active\n---\nglobal body');
+  writeFileSync(join(dir, 'broken.md'), 'name: broken\nscope: global\nstatus: active\n\nbody');
+  const out = runCheckin({ remindersDir: dir, cwd: dir, today: '2026-06-17' });
+  assert.match(out.systemMessage, /1 QUEUED REMINDER/);
+  assert.match(out.systemMessage, /1 MALFORMED REMINDER FILE/);
+  assert.match(out.hookSpecificOutput.additionalContext, /Queued reminders/);
+  assert.match(out.hookSpecificOutput.additionalContext, /Malformed reminder files/);
 });
 
 test('runCheckin: surfaces the full queue every session (no throttle)', () => {

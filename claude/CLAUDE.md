@@ -53,7 +53,8 @@ A reminder is a note-to-future-self that should surface in the right **project**
 
 **Creating one.** When I say "remind me [next time in X / tomorrow / on DATE] to …" (or equivalent), write a file `~/.claude/reminders/<slug>.md`:
 
-```yaml
+```markdown
+---
 name: <kebab-slug>
 scope: global | project:<name>     # project:<name> = the target repo's directory name
 due: 2026-06-09                    # OPTIONAL deadline only — omit for ordinary queue items. Set just when there's a real do-by date (resolve "tomorrow"/"Friday" to absolute); dated items sort first + flag OVERDUE. NOT a hide-until date.
@@ -61,9 +62,12 @@ created: <today>
 source_session: <this session id>
 done_when: <plain-language completion condition>   # optional but encouraged
 status: active
+---
+
+<the reminder body goes here>
 ```
 
-…followed by the reminder body (what to do, why, links to `[[followup-anchor]]` / `CREW-NNN` / file paths). A reminder set from one project for another is just `scope: project:<other>` — the file lives in the global store, so it surfaces there regardless of where it was authored.
+**The opening and closing `---` fences are required** — the file must begin with `---` on line 1 and close the frontmatter with another `---` before the body. The hook parses only fenced frontmatter; a fence-less file is silently skipped (it never reaches the queue), and the SessionStart hook will flag it as a `⚠️ MALFORMED REMINDER FILE` until fixed. The body (what to do, why, links to `[[followup-anchor]]` / `CREW-NNN` / file paths) follows the closing fence. A reminder set from one project for another is just `scope: project:<other>` — the file lives in the global store, so it surfaces there regardless of where it was authored.
 
 **Never** stash a cross-session reminder as a claude-mem memory, and **never** hand-edit a `SessionStart` hook blob in a project's `settings.local.json`. Both have silently failed before; the store + hook is the only mechanism.
 
