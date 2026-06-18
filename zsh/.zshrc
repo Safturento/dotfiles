@@ -194,3 +194,5 @@ alias zshreload='source ~/.zshrc'
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 . "$HOME/.atuin/bin/env"
+
+export BROWSER=wslview
