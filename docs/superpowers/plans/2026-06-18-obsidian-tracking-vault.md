@@ -533,7 +533,7 @@ On the Windows client: Settings → Community plugins → Browse → install **D
 
 Already established on the WSL/daemon side (Task 4 Step 4): the daemon dereferences the symlinks and uploads followup **content**, so Windows should show real, readable followup files. On the Windows client, just confirm `projects/<proj>/followups.md` renders the expected content. Per the write-back caveat, **don't edit followups on Windows** — edit them in the repo. (Optional: run the one-time Windows-edit write-back check from Task 4 Step 4.)
 
-- [ ] **Step 4: Write the home dashboard**
+- [x] **Step 4: Write the home dashboard**
 
 Create `~/obsidian/AI/dashboards/home.md`:
 ````markdown
@@ -562,7 +562,7 @@ SORT updated desc
 - [[projects/Recipes/followups|Recipes]]
 ````
 
-- [ ] **Step 5: Write the Jira board dashboard**
+- [x] **Step 5: Write the Jira board dashboard**
 
 Create `~/obsidian/AI/dashboards/jira.md`:
 ````markdown
