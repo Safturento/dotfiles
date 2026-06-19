@@ -44,7 +44,7 @@
 **Interfaces:**
 - Produces: the `~/obsidian/AI` directory tree every later task writes into; a running `obsidian-headless` continuous-sync daemon keeping it synced to the remote vault. (Vault is not git; synced via Obsidian Sync. The Windows desktop client + Dataview are wired in Task 8, when there's content to view.)
 
-- [ ] **Step 1: Create the folder skeleton**
+- [x] **Step 1: Create the folder skeleton**
 
 ```bash
 mkdir -p ~/obsidian/AI/reminders/archive \
@@ -52,14 +52,14 @@ mkdir -p ~/obsidian/AI/reminders/archive \
          ~/obsidian/AI/dashboards
 ```
 
-- [ ] **Step 2: Verify the skeleton exists**
+- [x] **Step 2: Verify the skeleton exists**
 
 ```bash
 find ~/obsidian/AI -type d | sort
 ```
 Expected: lists `~/obsidian/AI`, `~/obsidian/AI/dashboards`, `~/obsidian/AI/projects`, `~/obsidian/AI/projects/_jira-only`, `~/obsidian/AI/reminders`, `~/obsidian/AI/reminders/archive`.
 
-- [ ] **Step 3: Install the headless client**
+- [x] **Step 3: Install the headless client**
 
 ```bash
 npm install -g obsidian-headless
@@ -67,7 +67,7 @@ command -v ob && ob --version
 ```
 Expected: `ob` resolves (under the fnm node path) and prints a version. Record the absolute path from `command -v ob` — the systemd unit (Step 6) needs it.
 
-- [ ] **Step 4 (interactive — user runs; needs Obsidian credentials): Authenticate**
+- [x] **Step 4 (interactive — user runs; needs Obsidian credentials): Authenticate**
 
 The user runs this themselves (it prompts for email/password/MFA; do not type their credentials). Suggest they run it in-session with the `!` prefix:
 ```
@@ -75,7 +75,7 @@ The user runs this themselves (it prompts for email/password/MFA; do not type th
 ```
 Expected: "Logged in" confirmation. The auth token is written under `~/.config` (NOT in the vault) — never read or echo it.
 
-- [ ] **Step 5 (interactive — user enters the E2E password): Connect to the existing remote vault and do the initial sync**
+- [x] **Step 5 (interactive — user enters the E2E password): Connect to the existing remote vault and do the initial sync**
 
 The remote vault **`AI` already exists** (created + connected from the Windows client) and is **end-to-end encrypted**, so `sync-setup` will **connect** to it (not create) and will prompt for the **encryption password** — the user enters it manually; never read, echo, or store it. Suggest running these in-session with the `!` prefix so the prompt is interactive:
 ```
@@ -84,7 +84,7 @@ The remote vault **`AI` already exists** (created + connected from the Windows c
 ```
 Expected: `sync-setup` connects to the existing `AI` remote and accepts the E2E password; the one-shot `ob sync` reports an initial sync with 0 conflicts. Since the Windows vault is essentially empty, the about-to-be-populated WSL files (Tasks 2–3) will flow WSL → remote → Windows with no merge conflicts.
 
-- [ ] **Step 6: Install the continuous-sync systemd user service**
+- [x] **Step 6: Install the continuous-sync systemd user service**
 
 Create `~/.config/systemd/user/obsidian-sync.service`, referencing `ob`/Node through the **fnm default alias** so it tracks the default Node:
 ```ini
@@ -109,7 +109,7 @@ RestartSec=10
 WantedBy=default.target
 ```
 
-- [ ] **Step 7: Enable + start the service, and enable lingering so it survives logout/WSL idle**
+- [x] **Step 7: Enable + start the service, and enable lingering so it survives logout/WSL idle**
 
 ```bash
 systemctl --user daemon-reload
@@ -121,7 +121,7 @@ Expected: service `active (running)`. *(`enable-linger` lets the user service ke
 
 **E2E caveat — verify the daemon runs unattended:** because the vault is end-to-end encrypted and a systemd service can't answer a password prompt, the continuous-sync daemon only works if the manual unlock in Step 5 **cached the E2E key** under `~/.config` (so subsequent `ob sync` runs are non-interactive). Check `journalctl --user -u obsidian-sync.service -n 30` right after start: if it's **waiting on an encryption-password prompt** rather than syncing, the key wasn't cached. Fallback options, in order: (a) check `ob sync --help` for a non-interactive key/password flag or env var and add it to the unit's `Environment=`; (b) if none exists, drop the daemon and instead trigger `ob sync` from the SessionStart hook / a `/schedule` job after a manual unlock per boot. Record which path was taken.
 
-- [ ] **Step 8: Verify continuous sync picks up a change**
+- [x] **Step 8: Verify continuous sync picks up a change**
 
 ```bash
 echo "sync canary $(date)" > ~/obsidian/AI/dashboards/_synctest.md
