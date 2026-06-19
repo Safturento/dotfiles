@@ -16,7 +16,7 @@
 
 - **Vault path:** `~/obsidian/AI` on WSL ext4 (mirrors Windows `C:/Obsidian/AI`).
 - **Sync:** Obsidian Sync, driven on WSL by `obsidian-headless` (`ob sync --continuous`) as a **systemd user service**; Windows desktop client is a second device of the same remote vault. Requires an active **Obsidian Sync subscription**.
-- **Environment (verified):** Node v24.15 (headless needs ≥22 ✓); systemd is PID 1 (user services available ✓). The global npm prefix is under **fnm** (node-version-specific) — the systemd unit must use the **absolute** `ob` path / pin Node so it survives an fnm version switch.
+- **Environment (verified):** Node v24.15 (headless needs ≥22 ✓); systemd is PID 1 (user services available ✓). The systemd unit references Node/`ob` through the **fnm default alias** (`~/.local/share/fnm/aliases/default/bin`) so it tracks the default Node automatically. Caveat: global npm packages are per-Node-version, so after a default-Node bump you must `npm install -g obsidian-headless` under the new version or the alias path won't have `ob`.
 - **Hook stays dependency-free:** Node builtins only (`reminder-checkin.mjs` imports nothing external). Any change keeps that invariant.
 - **Reminder frontmatter invariant:** every reminder file must open with a `---` fence, carry `scope:`, and close the fence before the body. New `device:`/`project:` fields are additive and optional.
 - **Device identity:** `os.hostname()`. A reminder with **no** `device:` field is device-agnostic (surfaces everywhere — back-compat); a reminder with `device: <name>` surfaces only on that host (plus the existing scope rule).
@@ -86,7 +86,7 @@ Expected: `sync-setup` connects to the existing `AI` remote and accepts the E2E 
 
 - [ ] **Step 6: Install the continuous-sync systemd user service**
 
-Create `~/.config/systemd/user/obsidian-sync.service` (replace `<OB_PATH>` with the absolute path from Step 3, and `<NODE_BIN_DIR>` with `dirname` of the current node so the fnm-pinned Node is on PATH):
+Create `~/.config/systemd/user/obsidian-sync.service`, referencing `ob`/Node through the **fnm default alias** so it tracks the default Node:
 ```ini
 [Unit]
 Description=Obsidian headless continuous sync for ~/obsidian/AI
@@ -96,8 +96,12 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=%h/obsidian/AI
-Environment=PATH=<NODE_BIN_DIR>:/usr/local/bin:/usr/bin:/bin
-ExecStart=<OB_PATH> sync --continuous
+# fnm default alias — repoints automatically when the default Node changes.
+# NOTE: global npm packages are per-Node-version, so after a default-Node bump
+# you must `npm install -g obsidian-headless` under the new version or `ob` here
+# will be missing (the service will fail and Restart=on-failure will retry).
+Environment=PATH=/home/safturento/.local/share/fnm/aliases/default/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/safturento/.local/share/fnm/aliases/default/bin/ob sync --continuous
 Restart=on-failure
 RestartSec=10
 
