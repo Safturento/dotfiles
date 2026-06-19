@@ -251,14 +251,14 @@ Start a fresh Claude session in `~` and confirm the memory index still appears i
 - Consumes: `~/obsidian/AI/projects/` (Task 1); the repo list (`~/Repos/*/docs/followups.md`).
 - Produces: Obsidian-app-visible followups per project (MCP-blind by design).
 
-- [ ] **Step 1: List repos with a followups file**
+- [x] **Step 1: List repos with a followups file**
 
 ```bash
 for d in ~/Repos/*/; do [ -f "$d/docs/followups.md" ] && echo "$d"; done
 ```
 Expected: e.g. `Recipes`, `crew`, `home-assistant`, `skadimetric`, plus active worktrees. Map each to its clean folder; worktrees (`crew-CREW-242`) collapse to the base project (`crew`) — link only the main checkout's followups, not each worktree's.
 
-- [ ] **Step 2: Create one outward symlink per base project (repeat per repo)**
+- [x] **Step 2: Create one outward symlink per base project (repeat per repo)**
 
 ```bash
 CLEAN=crew ; REPO=~/Repos/crew
@@ -266,16 +266,22 @@ mkdir -p ~/obsidian/AI/projects/$CLEAN
 ln -s "$REPO/docs/followups.md" ~/obsidian/AI/projects/$CLEAN/followups.md
 ```
 
-- [ ] **Step 3: Verify the symlinks resolve**
+- [x] **Step 3: Verify the symlinks resolve**
 
 ```bash
 for f in ~/obsidian/AI/projects/*/followups.md; do echo "$f -> $(readlink -f "$f")"; done
 ```
 Expected: each resolves to a real `docs/followups.md` in its repo.
 
-- [ ] **Step 4 (interactive, GUI): Confirm Obsidian renders a followups file**
+- [x] **Step 4: Confirm how the sync daemon treats the in-vault symlinks (answers the Task 8 open question)**
 
-Open `projects/crew/followups.md` in Obsidian. Expected: the repo's followups content renders (proving the app follows the outward symlink even though MCP would refuse it).
+```bash
+sleep 6 && journalctl --user -u obsidian-sync.service -n 15 --no-pager | grep -iE "followup|upload|synced"
+for f in ~/obsidian/AI/projects/*/followups.md; do [ -L "$f" ] && echo "still symlink ✓ $f" || echo "REPLACED ✗ $f"; done
+```
+**Observed (2026-06-18):** the headless daemon **dereferences** each symlink and uploads the **content** (not a broken stub), while the WSL side **stays a symlink**. So followups appear as readable real files on the Windows client + mobile — better than the "broken stub" risk the plan originally hedged against.
+
+**Guidance (write-back caveat):** sync is bidirectional, so editing a followup on Windows/mobile would propagate back toward WSL — at best writing through the symlink into the repo file, at worst replacing the WSL symlink with a real file (decoupling it from the repo). This matches the convention anyway: **view followups on Windows; edit them in the repo via the PR flow.** Optional one-time check: edit a followup on Windows and confirm whether WSL writes through the symlink or replaces it; if it replaces, exclude `**/followups.md` from sync and treat them as WSL-only.
 
 ---
 
@@ -522,9 +528,9 @@ On Windows, open Obsidian → Sync → log in to the same account → connect th
 
 On the Windows client: Settings → Community plugins → Browse → install **Dataview** → enable it. Its config syncs down to the WSL replica automatically.
 
-- [ ] **Step 3: Verify the symlink-over-sync behavior (spec open item)**
+- [ ] **Step 3: Verify the symlink-over-sync behavior on Windows (mostly answered in Task 4 Step 4)**
 
-On the Windows client, open a project that has a `followups.md` (an outward symlink on WSL). Confirm whether Obsidian Sync replicated the followup **content** or a broken/empty symlink stub. Expected/acceptable: followups may not render on Windows (the symlink targets a WSL repo path). If they sync as broken stubs that cause conflict churn, exclude `**/followups.md` via Obsidian Sync selective-sync, and rely on the WSL-side app/Dataview for followups. Record the observed behavior here.
+Already established on the WSL/daemon side (Task 4 Step 4): the daemon dereferences the symlinks and uploads followup **content**, so Windows should show real, readable followup files. On the Windows client, just confirm `projects/<proj>/followups.md` renders the expected content. Per the write-back caveat, **don't edit followups on Windows** — edit them in the repo. (Optional: run the one-time Windows-edit write-back check from Task 4 Step 4.)
 
 - [ ] **Step 4: Write the home dashboard**
 
