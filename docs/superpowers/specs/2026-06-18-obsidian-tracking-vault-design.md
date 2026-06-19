@@ -103,7 +103,7 @@ Because `~/.claude/reminders` on each machine now symlinks into a **shared** syn
 ## Tooling
 
 - **Obsidian Sync subscription** (required by the headless client) + the **`obsidian-headless`** npm package (needs Node ≥22) running as a systemd user service on WSL.
-- **`followups-vault-sync.mjs`** — dependency-free Node watcher (systemd user service) that mirrors each base repo's `docs/followups.md` into the vault as a real file and re-copies on change. Lives in `~/dotfiles/claude/bin/`.
+- **`followups-vault-sync.mjs`** — dependency-free Node watcher (systemd user service) that mirrors each base repo's `docs/followups.md` into the vault as a real file and re-copies on change. Watches everything under `~/Repos/*` plus an `EXTRA_REPOS` list (currently `~/dotfiles`, so vault-setup followups land in the vault too). Lives in `~/dotfiles/claude/bin/`.
 - Register **MCPVault** in `~/.claude.json` `mcpServers`, pointing `npx @bitbonsai/mcpvault@latest ~/obsidian/AI`. Gives Claude read/write/search over reminders + memory + Jira notes + followups copies.
 - Obsidian **Dataview** plugin for the cross-project dashboards — the core human-friendliness payoff (all followups / reminders / Jira in one queryable table). Installed via the Windows desktop client (the headless client has no plugin UI); its config syncs down to the WSL replica.
 

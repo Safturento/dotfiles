@@ -13,29 +13,38 @@
 // Dependency-free: Node builtins only. Watches each repo's `docs/` directory
 // (not the file directly) so atomic-rename writes from git/editors are caught.
 import { readdirSync, statSync, existsSync, copyFileSync, mkdirSync, watch } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 import { homedir } from 'node:os';
 
 const REPOS = join(homedir(), 'Repos');
 const VAULT = join(homedir(), 'obsidian', 'AI', 'projects');
+// Repos outside ~/Repos to also mirror (e.g. this dotfiles repo itself, so
+// vault-setup followups land in the vault like every other project's).
+const EXTRA_REPOS = [join(homedir(), 'dotfiles')];
 
-// Discover base repos (not worktrees) that have a followups file.
-// A main working tree has `.git` as a DIRECTORY; a linked worktree has it as a FILE.
+// Add `repo` (vault folder = `name`) to `pairs` if it's a main working tree with
+// a followups file. A main working tree has `.git` as a DIRECTORY; a linked
+// worktree has it as a FILE — so this also skips worktrees.
+function consider(pairs, repo, name) {
+  let gitStat;
+  try { gitStat = statSync(join(repo, '.git')); } catch { return; }
+  if (!gitStat.isDirectory()) return;
+  const src = join(repo, 'docs', 'followups.md');
+  if (!existsSync(src)) return;
+  const destDir = join(VAULT, name);
+  pairs.push({ name, src, destDir, dest: join(destDir, 'followups.md') });
+}
+
+// Discover base repos with a followups file: everything under ~/Repos plus the
+// explicit EXTRA_REPOS.
 function discover() {
   const pairs = [];
-  let entries;
-  try { entries = readdirSync(REPOS, { withFileTypes: true }); } catch { return pairs; }
+  let entries = [];
+  try { entries = readdirSync(REPOS, { withFileTypes: true }); } catch { /* no ~/Repos */ }
   for (const e of entries) {
-    if (!e.isDirectory()) continue;
-    const repo = join(REPOS, e.name);
-    let gitStat;
-    try { gitStat = statSync(join(repo, '.git')); } catch { continue; }
-    if (!gitStat.isDirectory()) continue; // skip worktrees
-    const src = join(repo, 'docs', 'followups.md');
-    if (!existsSync(src)) continue;
-    const destDir = join(VAULT, e.name);
-    pairs.push({ name: e.name, src, destDir, dest: join(destDir, 'followups.md') });
+    if (e.isDirectory()) consider(pairs, join(REPOS, e.name), e.name);
   }
+  for (const repo of EXTRA_REPOS) consider(pairs, repo, basename(repo));
   return pairs;
 }
 
