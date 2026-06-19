@@ -452,7 +452,7 @@ Expected: reminders/memory searchable; followups absent from MCP results.
 - Consumes: the Atlassian MCP (`searchJiraIssuesUsingJql`, `getJiraIssue`); the MCPVault `write_note`; the clean-name mapping.
 - Produces: `projects/<clean>/jira/<KEY>.md` snapshot notes (and `projects/_jira-only/<KEY>/<KEY>.md` for unmapped spaces).
 
-- [ ] **Step 1: Author the skill**
+- [x] **Step 1: Author the skill**
 
 Create `~/.claude/skills/sync-jira-vault/SKILL.md`:
 ```markdown
@@ -498,11 +498,11 @@ description: Use when asked to refresh the Jira mirror in the Obsidian vault ("s
 NEVER write a Jira API token into the vault — all Jira access is via the MCP.
 ```
 
-- [ ] **Step 2: Dry-run the skill for one project**
+- [x] **Step 2: Dry-run the skill for one project**
 
 Invoke the skill scoped to a single project (e.g. "sync jira to vault for CREW only"). Expected: `~/obsidian/AI/projects/crew/jira/*.md` notes appear with correct frontmatter.
 
-- [ ] **Step 3: Verify the notes are MCP-searchable and token-free**
+- [x] **Step 3: Verify the notes are MCP-searchable and token-free**
 
 ```bash
 ls ~/obsidian/AI/projects/crew/jira/
