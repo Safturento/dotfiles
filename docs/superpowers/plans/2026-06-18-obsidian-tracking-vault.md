@@ -8,7 +8,7 @@
 
 **Goal:** Stand up an Obsidian vault that is the unified, mobile-capable human view over reminders, memory, followups, and Jira — without breaking the SessionStart hook, PR-review of followups, or the Jira source-of-truth.
 
-**Architecture:** Reminders and memory physically relocate *into* the vault with canonical paths becoming inward symlinks (so MCPVault can read/write/search them and the hook/harness keep working through the links). Followups stay git-tracked in their repos and appear via outward symlinks (Obsidian-app-visible, MCP-blind). Jira is mirrored as plain-markdown snapshot notes written by Claude through the existing Atlassian MCP (no token ever enters the synced vault).
+**Architecture:** Reminders and memory physically relocate *into* the vault with canonical paths becoming inward symlinks (so MCPVault can read/write/search them and the hook/harness keep working through the links). Followups stay git-tracked in their repos (canonical) and are mirrored into the vault as real-file copies kept fresh by a small Node watcher service (a symlink approach was tried and abandoned — the sync daemon never re-reads symlink targets). Jira is mirrored as plain-markdown snapshot notes written by Claude through the existing Atlassian MCP (no token ever enters the synced vault).
 
 **Tech Stack:** Obsidian Sync via the `obsidian-headless` continuous-sync daemon (WSL) + Windows desktop client; Dataview plugin; MCPVault (`@bitbonsai/mcpvault`) MCP server; the existing dependency-free Node SessionStart hook (`reminder-checkin.mjs`); the existing Atlassian MCP.
 
@@ -242,46 +242,62 @@ Start a fresh Claude session in `~` and confirm the memory index still appears i
 
 ---
 
-### Task 4: Surface followups via outward symlinks
+### Task 4: Mirror followups into the vault as real copies via a watcher service
+
+> **Design change (2026-06-18):** this task originally used **outward symlinks**. Implementation testing disproved that approach — the `obsidian-headless` daemon reads a symlink's target **only once, at link creation**, and never re-reads it, so repo-side followup edits (Claude appends, PR resolution, branch switches) never reached the vault. Symlinks replaced with **real-file copies** maintained by a watcher service. Bonus: real in-vault files are **MCP-searchable** (the boundary guard only blocked the symlink form).
 
 **Files:**
-- Create: `~/obsidian/AI/projects/<clean>/followups.md` → symlink to `<repo>/docs/followups.md` for each active repo
+- Create: `~/dotfiles/claude/bin/followups-vault-sync.mjs` (dependency-free Node watcher)
+- Create: `~/.config/systemd/user/followups-vault-sync.service`
+- Produces: `~/obsidian/AI/projects/<clean>/followups.md` as **real files**, re-copied on repo change.
 
 **Interfaces:**
-- Consumes: `~/obsidian/AI/projects/` (Task 1); the repo list (`~/Repos/*/docs/followups.md`).
-- Produces: Obsidian-app-visible followups per project (MCP-blind by design).
+- Consumes: base repos under `~/Repos/*` with `docs/followups.md` (worktrees skipped via the `.git`-is-a-dir test).
+- Produces: real-file followups copies; a running watcher service.
 
-- [x] **Step 1: List repos with a followups file**
+- [x] **Step 1: Write the watcher** (`~/dotfiles/claude/bin/followups-vault-sync.mjs`)
+
+Dependency-free Node. Discovers base repos (main working tree has `.git` as a **directory**; linked worktrees have it as a **file** → skipped), does an initial copy of each `docs/followups.md` into `~/obsidian/AI/projects/<repo>/followups.md`, then `fs.watch`es each `docs/` directory (not the file — so atomic-rename writes from git/editors are caught) and re-copies (300 ms debounce) on any change to `followups.md`. (Full source committed in dotfiles.)
+
+- [x] **Step 2: Remove the old symlinks, install + enable the service**
+
+`~/.config/systemd/user/followups-vault-sync.service`:
+```ini
+[Unit]
+Description=Mirror repo docs/followups.md into the Obsidian vault (real copies + watch)
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=PATH=/home/safturento/.local/share/fnm/aliases/default/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/safturento/.local/share/fnm/aliases/default/bin/node /home/safturento/dotfiles/claude/bin/followups-vault-sync.mjs
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
 
 ```bash
-for d in ~/Repos/*/; do [ -f "$d/docs/followups.md" ] && echo "$d"; done
+for f in ~/obsidian/AI/projects/*/followups.md; do [ -L "$f" ] && rm "$f"; done   # drop symlinks first so copies replace them
+systemctl --user daemon-reload
+systemctl --user enable --now followups-vault-sync.service
+systemctl --user status followups-vault-sync.service --no-pager   # expect active (running)
 ```
-Expected: e.g. `Recipes`, `crew`, `home-assistant`, `skadimetric`, plus active worktrees. Map each to its clean folder; worktrees (`crew-CREW-242`) collapse to the base project (`crew`) — link only the main checkout's followups, not each worktree's.
 
-- [x] **Step 2: Create one outward symlink per base project (repeat per repo)**
+- [x] **Step 3: Verify real files + initial sync**
 
 ```bash
-CLEAN=crew ; REPO=~/Repos/crew
-mkdir -p ~/obsidian/AI/projects/$CLEAN
-ln -s "$REPO/docs/followups.md" ~/obsidian/AI/projects/$CLEAN/followups.md
+journalctl --user -u followups-vault-sync.service --no-pager | tail   # "synced <repo> followups -> vault" per repo, then "watching ..."
+for f in ~/obsidian/AI/projects/*/followups.md; do [ -L "$f" ] && echo "SYMLINK ✗ $f" || echo "real-file ✓ $f"; done
 ```
+**Observed (2026-06-18):** 4 base repos mirrored (Recipes, crew, home-assistant, skadimetric), all real files.
 
-- [x] **Step 3: Verify the symlinks resolve**
+- [x] **Step 4: End-to-end test — repo edit propagates to the vault + cloud**
 
-```bash
-for f in ~/obsidian/AI/projects/*/followups.md; do echo "$f -> $(readlink -f "$f")"; done
-```
-Expected: each resolves to a real `docs/followups.md` in its repo.
+Append a marker to a repo's `docs/followups.md`, then watch both services. **Observed:** repo edit → watcher `synced … -> vault` (<1 s) → `obsidian-sync` `Uploading … Upload complete` (same second). A `git checkout` revert propagated identically (the `docs/` dir watch catches rename-into-place). Reverted the test; working tree clean.
 
-- [x] **Step 4: Confirm how the sync daemon treats the in-vault symlinks (answers the Task 8 open question)**
-
-```bash
-sleep 6 && journalctl --user -u obsidian-sync.service -n 15 --no-pager | grep -iE "followup|upload|synced"
-for f in ~/obsidian/AI/projects/*/followups.md; do [ -L "$f" ] && echo "still symlink ✓ $f" || echo "REPLACED ✗ $f"; done
-```
-**Observed (2026-06-18):** the headless daemon **dereferences** each symlink and uploads the **content** (not a broken stub), while the WSL side **stays a symlink**. So followups appear as readable real files on the Windows client + mobile — better than the "broken stub" risk the plan originally hedged against.
-
-**Guidance (write-back caveat):** sync is bidirectional, so editing a followup on Windows/mobile would propagate back toward WSL — at best writing through the symlink into the repo file, at worst replacing the WSL symlink with a real file (decoupling it from the repo). This matches the convention anyway: **view followups on Windows; edit them in the repo via the PR flow.** Optional one-time check: edit a followup on Windows and confirm whether WSL writes through the symlink or replaces it; if it replaces, exclude `**/followups.md` from sync and treat them as WSL-only.
+**Model:** the repo is canonical; vault copies are a **read-only mirror** (like Jira notes). Don't edit followup copies on Windows/mobile — the watcher overwrites them on the next repo change. Edit followups in the repo (PR flow).
 
 ---
 
@@ -529,11 +545,9 @@ On Windows, open Obsidian → Sync → log in to the same account → connect th
 
 On the Windows client: Settings → Community plugins → Browse → install **Dataview** → enable it. Its config syncs down to the WSL replica automatically.
 
-- [x] **Step 3: Verify the symlink-over-sync behavior on Windows (mostly answered in Task 4 Step 4)**
+- [x] **Step 3: Verify followups render on Windows (now real-file copies, per Task 4 redesign)**
 
-Already established on the WSL/daemon side (Task 4 Step 4): the daemon dereferences the symlinks and uploads followup **content**, so Windows shows real, readable followup files.
-
-**Write-back CONFIRMED (2026-06-18):** edited a followup on the Windows client → it propagated Windows → remote → daemon → **wrote *through* the WSL symlink into the actual repo file** (`~/Repos/crew/docs/followups.md` showed the edit as an uncommitted ` M` change), and the **WSL symlink stayed intact** (not replaced). Conclusion: followups are fully editable from any device and edits land as normal uncommitted changes in the git repo — **no selective-sync exclusion needed**. Caveat: casual Windows/mobile edits dirty the repo working tree (recoverable; commit or `git checkout`). Convention stands: followups change via the repo/PR flow.
+Followups are now **real-file copies** maintained by the watcher service (Task 4), not symlinks — so they sync to Windows/mobile like any other note and update within ~1s of a repo edit. On the Windows client, confirm `projects/<proj>/followups.md` shows current content. Read-only mirror: edit followups in the repo, not on Windows (the watcher overwrites copies on the next repo change). The earlier symlink write-back investigation is superseded by the watcher design.
 
 - [x] **Step 4: Write the home dashboard**
 
@@ -589,13 +603,13 @@ Open `dashboards/home.md` on the Windows client (Dataview enabled). Expected: th
 - Unified view / mirror role → Tasks 2–8 (existing stores stay canonical). ✓
 - Four sources (reminders, memory, followups, Jira) → Tasks 2, 3, 4, 7. ✓
 - Symlinks live/no-sync for files; inward direction → Tasks 2, 3. ✓
-- Followups git-tracked + outward symlink → Task 4. ✓
+- Followups git-tracked (canonical) + real-file copies via watcher service → Task 4 (redesigned from symlinks). ✓
 - Cloud-sync via headless continuous-sync daemon + `device:` tag + hook filter → Task 1 (headless sync) & Task 5 (device). ✓
 - Jira MCP snapshot notes, per-project folders, `_jira-only` fallback, no token in vault → Task 7. ✓
 - Clean-name mapping (memory + followups + Jira converge) → Global Constraints + Tasks 3, 4, 7. ✓
 - MCPVault registration + boundary-guard verification → Task 6. ✓
 - Windows desktop client + Dataview cross-project dashboards → Task 8. ✓
-- Sync-engine symlink-over-sync caveat → Task 8 Step 3. ✓
+- Followups freshness (watcher) + the daemon's symlink-target blind spot → Task 4 finding. ✓
 - Out-of-scope (custom Jira plugin, scheduled refresh) → intentionally not tasked. ✓
 
 **Placeholder scan:** No TBD/TODO; all code and commands are concrete. Per-repo/per-dir loops show the exact command with one worked example and the repeat rule.
@@ -604,9 +618,9 @@ Open `dashboards/home.md` on the Windows client (Dataview enabled). Expected: th
 
 ## Open items — all resolved during execution (2026-06-18)
 - Exact clean-name rows for every active repo/Jira key (table seeded; extended for home-assistant, Recipes, skadimetric, KAN/HAI keys during Tasks 3/4/7).
-- ✅ **Symlink-over-sync RESOLVED** (Task 8 Step 3): daemon dereferences + uploads content; Windows edits write *through* the WSL symlink into the repo file; symlink stays intact. **No selective-sync exclusion needed.**
+- ✅ **Followups sync RESOLVED via redesign** (Task 4): symlinks abandoned (daemon never re-reads a symlink target → stale vault). Now real-file copies maintained by the `followups-vault-sync` watcher service; repo→vault→cloud in ~1s. Real files are also MCP-searchable. Read-only mirror (edit in repo).
 - ✅ **Remote vault**: `AI` already existed (Windows-created, E2E). `sync-setup` connected; user entered the E2E password (Task 1 Step 5).
 - ✅ **E2E vs. unattended daemon** (Task 1 Step 7): the first manual unlock cached the E2E key — `ob sync --continuous` runs as a systemd user service with no prompt; no fallback needed.
-- ✅ **MCP boundary guard** (Task 6 Step 3): verified in a fresh session — `search_notes` finds reminders/memory/Jira but returns **no** followup files (out-of-vault symlinks blocked), exactly as designed.
+- ✅ **MCP search** (Task 6 Step 3): verified in a fresh session — `search_notes` finds reminders, memory, and Jira notes. (Note: when followups were symlinks this confirmed the boundary guard blocked them; after the Task 4 redesign to real-file copies, followups are now MCP-searchable too.)
 
-**Status: all 8 tasks complete and verified.**
+**Status: all 8 tasks complete and verified.** (Task 4 reworked post-implementation: followups via watcher-maintained real copies instead of symlinks.)

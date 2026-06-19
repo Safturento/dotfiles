@@ -27,7 +27,7 @@ An Obsidian vault that is the **unified human view** over these stores, **withou
 | Sources aggregated | Reminders, Memory, Followups, Jira | All four |
 | Staying current | **Symlinks** (live, no sync step) for files; MCP snapshots for Jira | Zero staleness for file sources |
 | Symlink direction | **Inward** (real bytes in vault) for reminders + memory | MCPVault blocks out-of-vault symlinks; inward keeps MCP fully capable |
-| Followups | Stay **git-tracked** in-repo; **outward** symlink into vault | Preserve atomic PR-coupled resolution, PR-review visibility, crew-dispatch access; outward symlink still gives the full Obsidian-app view |
+| Followups | Stay **git-tracked** in-repo (canonical); mirrored into the vault as **real-file copies** kept fresh by a watcher service | Preserve atomic PR-coupled resolution, PR-review visibility, crew-dispatch access; real copies (not symlinks) because the sync daemon doesn't re-read symlink targets — see the implementation note below |
 | Vault storage | **Cloud-synced** (mobile access); `device:` frontmatter tag to filter per machine | Mobile is the human-friendliness payoff; device tag discriminates multi-machine items |
 | Jira | **MCP snapshot notes** via the existing Atlassian MCP | No token ever enters the synced vault (token stays in MCP config); mobile-safe; backlinkable |
 | Jira folder | Per-project, under each project folder | One-stop project view |
@@ -42,15 +42,16 @@ This is why direction is chosen per-source:
 |---|---|---|---|---|---|---|
 | Reminders | in vault | `~/.claude/reminders` → vault | real dir | ✅ | ✅ | live |
 | Memory | in vault | `~/.claude/projects/<enc>/memory` → vault | real dir | ✅ | ✅ | live |
-| Followups | in repo (git) | unchanged (`<repo>/docs/followups.md`) | outward symlink → repo | ❌ | ✅ | live |
+| Followups | in repo (git) | unchanged (`<repo>/docs/followups.md`) | **real-file copy** kept fresh by a watcher | ✅ | ✅ | ~1s repo→vault |
 | Jira | Jira | n/a | MCP snapshot notes | ✅ | ✅ | ⟳ refresh |
 
-Losing MCP search over followups costs almost nothing: Claude already reads `docs/followups.md` directly in-repo, where the PR-coupling lives.
-
-### Symlink-direction sync subtlety
+### Inward symlink sync subtlety
 - **Inward** symlinks (`~/.claude/...`) live *outside* the vault, so they are **not synced**. Each machine keeps its own pointer into its local copy of the synced vault; the vault holds only real files (sync-friendly).
-- **Outward** followup symlinks live *inside* the vault, so they **do sync** but only resolve on the machine that has that repo at that path (dangle elsewhere). Acceptable — followups are a desktop-dev concern.
-- **Verify in planning:** confirm the chosen sync engine handles symlinks-inside-the-vault without corrupting them (some engines copy/break symlinks). If problematic, exclude the outward symlinks from sync or accept they're desktop-only.
+
+### Followups: why a watcher, not a symlink (implementation finding, 2026-06-18)
+The original design used an **outward symlink** (`vault/projects/<p>/followups.md` → `<repo>/docs/followups.md`). Implementation testing disproved it: **the `obsidian-headless` sync daemon reads a symlink's target exactly once, at link creation, and never re-reads it.** A symlink *create/delete* is detected (dir-entry change), but a change to the symlink's *target* content — the normal way followups change (Claude appends, PR resolution, branch switches) — is invisible to the daemon, so the vault copy went permanently stale. (Recreating the symlink forces a re-upload, but that's a manual hack.)
+
+**Resolution:** followups are mirrored as **real-file copies** in the vault by a small dependency-free Node watcher (`followups-vault-sync.mjs`, systemd user service). It discovers base repos (a main working tree has `.git` as a *directory*; linked worktrees have it as a *file* — used to skip worktrees), does an initial copy, and watches each `docs/` dir (not the file, so atomic-rename writes are caught) to re-copy on change. Measured end-to-end: repo edit → vault → Obsidian Sync upload in ~1s. Bonus: as real in-vault files, followups are now **MCP-searchable** (the boundary guard only ever blocked the symlink form). The repo stays canonical; the vault copies are a **read-only mirror** (like the Jira notes) — don't edit them on Windows/mobile (the watcher would overwrite on the next repo change); edit followups in the repo.
 
 ## Vault layout
 
@@ -64,7 +65,7 @@ vault/
       memories/              # REAL dir; canonical memory dir symlinks in
         MEMORY.md
         <fact>.md
-      followups.md           # OUTWARD symlink → ~/Repos/crew/docs/followups.md
+      followups.md           # REAL-file copy of ~/Repos/crew/docs/followups.md (watcher-maintained)
       jira/
         CREW-94.md           # MCP snapshot notes for this project's Jira space
     <project>/ …
@@ -102,7 +103,8 @@ Because `~/.claude/reminders` on each machine now symlinks into a **shared** syn
 ## Tooling
 
 - **Obsidian Sync subscription** (required by the headless client) + the **`obsidian-headless`** npm package (needs Node ≥22) running as a systemd user service on WSL.
-- Register **MCPVault** in `~/.claude.json` `mcpServers`, pointing `npx @bitbonsai/mcpvault@latest ~/obsidian/AI`. Gives Claude read/write/search over reminders + memory + Jira notes (followups remain read-via-repo).
+- **`followups-vault-sync.mjs`** — dependency-free Node watcher (systemd user service) that mirrors each base repo's `docs/followups.md` into the vault as a real file and re-copies on change. Lives in `~/dotfiles/claude/bin/`.
+- Register **MCPVault** in `~/.claude.json` `mcpServers`, pointing `npx @bitbonsai/mcpvault@latest ~/obsidian/AI`. Gives Claude read/write/search over reminders + memory + Jira notes + followups copies.
 - Obsidian **Dataview** plugin for the cross-project dashboards — the core human-friendliness payoff (all followups / reminders / Jira in one queryable table). Installed via the Windows desktop client (the headless client has no plugin UI); its config syncs down to the WSL replica.
 
 ## Out of scope / future enhancements
