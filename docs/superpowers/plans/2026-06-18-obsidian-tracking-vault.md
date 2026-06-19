@@ -295,7 +295,7 @@ for f in ~/obsidian/AI/projects/*/followups.md; do [ -L "$f" ] && echo "still sy
 - Consumes: existing exported `readStore`, `selectReminders`, `runCheckin`.
 - Produces: `selectReminders(reminders, project, device)` — third positional arg; `device` defaults to `null` meaning "no device filter". `runCheckin({ remindersDir, cwd, today, device })` — new `device` field.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `reminder-checkin.test.mjs`:
 ```javascript
@@ -326,12 +326,12 @@ test('selectReminders: device=null disables the device filter (back-compat)', ()
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd ~/dotfiles && node --test claude/hooks/reminder-checkin.test.mjs`
 Expected: FAIL — `reminders[0].device` is `undefined` and `selectReminders` ignores the third arg / wrong arity.
 
-- [ ] **Step 3: Capture `device` in `readStore`**
+- [x] **Step 3: Capture `device` in `readStore`**
 
 In `reminder-checkin.mjs`, in the `reminders.push({ ... })` object inside `readStore`, add the field:
 ```javascript
@@ -339,7 +339,7 @@ In `reminder-checkin.mjs`, in the `reminders.push({ ... })` object inside `readS
 ```
 (Place it next to `scope`, before `due`.)
 
-- [ ] **Step 4: Add the device filter to `selectReminders`**
+- [x] **Step 4: Add the device filter to `selectReminders`**
 
 Change the signature and filter:
 ```javascript
@@ -359,7 +359,7 @@ export function selectReminders(reminders, project, device = null) {
 }
 ```
 
-- [ ] **Step 5: Thread `device` through `runCheckin` and `main`**
+- [x] **Step 5: Thread `device` through `runCheckin` and `main`**
 
 In `runCheckin`, accept and pass `device`:
 ```javascript
@@ -383,19 +383,19 @@ and update the `runCheckin` call:
   const out = runCheckin({ remindersDir, cwd, today: localToday(), device: hostname() });
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd ~/dotfiles && node --test claude/hooks/reminder-checkin.test.mjs`
 Expected: PASS (all tests, including the pre-existing ones — the new `device` arg is optional so old `selectReminders(rs, 'crew')` calls still pass).
 
-- [ ] **Step 7: Smoke-test the live hook**
+- [x] **Step 7: Smoke-test the live hook**
 
 ```bash
 echo '{"cwd":"'"$HOME"'/Repos/crew"}' | node ~/.claude/hooks/reminder-checkin.mjs
 ```
 Expected: still lists your reminders (all current ones are device-agnostic, so none are filtered out).
 
-- [ ] **Step 8: Document the new field in the reminders convention**
+- [x] **Step 8: Document the new field in the reminders convention**
 
 In `~/dotfiles/claude/CLAUDE.md`, in the "Reminders (cross-session)" frontmatter block, add a line after `scope:`:
 ```
@@ -403,7 +403,7 @@ device: <hostname>                 # OPTIONAL — restrict surfacing to one mach
 ```
 *(This is a `~/.claude` deliverable — edited directly, no ticket.)* Mirror the same addition into `~/.claude/reminders/README.md`'s frontmatter example.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 cd ~/dotfiles
