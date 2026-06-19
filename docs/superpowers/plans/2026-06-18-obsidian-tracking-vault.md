@@ -422,13 +422,14 @@ git commit -m "feat(hooks): per-device reminder filtering for the synced vault"
 - Consumes: the `~/obsidian/AI` path; the real files placed by Tasks 2–3.
 - Produces: MCP tools (`read_note`, `write_note`, `search_notes`, `update_frontmatter`, …) scoped to the vault, used by Task 7.
 
-- [ ] **Step 1: Add the server (user scope)**
+- [x] **Step 1: Add the server (user scope)**
 
 ```bash
 claude mcp add obsidian-vault --scope user -- npx -y @bitbonsai/mcpvault@latest ~/obsidian/AI
 ```
+Done 2026-06-18: added to user config; `claude mcp list` reports `obsidian-vault … ✔ Connected`.
 
-- [ ] **Step 2: Verify it registered**
+- [x] **Step 2: Verify it registered**
 
 ```bash
 claude mcp list | grep obsidian-vault
