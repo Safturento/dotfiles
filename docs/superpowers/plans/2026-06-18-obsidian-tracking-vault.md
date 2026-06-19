@@ -75,15 +75,14 @@ The user runs this themselves (it prompts for email/password/MFA; do not type th
 ```
 Expected: "Logged in" confirmation. The auth token is written under `~/.config` (NOT in the vault) — never read or echo it.
 
-- [ ] **Step 5: Connect the vault to the remote and do the initial sync**
+- [ ] **Step 5 (interactive — user enters the E2E password): Connect to the existing remote vault and do the initial sync**
 
-Create/connect the remote vault named `AI` from the WSL side so the (about-to-be-populated) canonical files seed the remote:
-```bash
-cd ~/obsidian/AI
-ob sync-setup --vault "AI"
-ob sync
+The remote vault **`AI` already exists** (created + connected from the Windows client) and is **end-to-end encrypted**, so `sync-setup` will **connect** to it (not create) and will prompt for the **encryption password** — the user enters it manually; never read, echo, or store it. Suggest running these in-session with the `!` prefix so the prompt is interactive:
 ```
-Expected: `sync-setup` registers the vault; the one-shot `ob sync` reports an initial sync with 0 conflicts. *(If a remote vault named `AI` already exists from a prior Windows setup, `sync-setup` connects to it instead — confirm the name matches.)*
+! cd ~/obsidian/AI && ob sync-setup --vault "AI"
+! cd ~/obsidian/AI && ob sync
+```
+Expected: `sync-setup` connects to the existing `AI` remote and accepts the E2E password; the one-shot `ob sync` reports an initial sync with 0 conflicts. Since the Windows vault is essentially empty, the about-to-be-populated WSL files (Tasks 2–3) will flow WSL → remote → Windows with no merge conflicts.
 
 - [ ] **Step 6: Install the continuous-sync systemd user service**
 
@@ -115,6 +114,8 @@ loginctl enable-linger "$USER"
 systemctl --user status obsidian-sync.service --no-pager
 ```
 Expected: service `active (running)`. *(`enable-linger` lets the user service keep running without an interactive login — needed so Claude's writes sync even when you're only on the Windows client. May require one `sudo` for `loginctl enable-linger`; if it prompts, the user runs that line with `!`.)*
+
+**E2E caveat — verify the daemon runs unattended:** because the vault is end-to-end encrypted and a systemd service can't answer a password prompt, the continuous-sync daemon only works if the manual unlock in Step 5 **cached the E2E key** under `~/.config` (so subsequent `ob sync` runs are non-interactive). Check `journalctl --user -u obsidian-sync.service -n 30` right after start: if it's **waiting on an encryption-password prompt** rather than syncing, the key wasn't cached. Fallback options, in order: (a) check `ob sync --help` for a non-interactive key/password flag or env var and add it to the unit's `Environment=`; (b) if none exists, drop the daemon and instead trigger `ob sync` from the SessionStart hook / a `/schedule` job after a manual unlock per boot. Record which path was taken.
 
 - [ ] **Step 8: Verify continuous sync picks up a change**
 
@@ -591,4 +592,5 @@ Open `dashboards/home.md` on the Windows client (Dataview enabled). Expected: th
 ## Open items carried from the spec (confirm during execution)
 - Exact clean-name rows for every active repo/Jira key (table is seeded; extend in Task 3/4/7 as encountered).
 - Sync-engine symlink-over-sync behavior on the Windows client (Task 8 Step 3) — determines whether `**/followups.md` needs selective-sync exclusion.
-- Headless `ob sync-setup` remote-vault naming: confirm whether a remote `AI` already exists (Windows-first) or is created from WSL (Task 1 Step 5).
+- ✅ Remote vault resolved: `AI` already exists (Windows-created, connected to Sync, **E2E encrypted**). `sync-setup` connects to it; the user enters the E2E password manually (Task 1 Step 5).
+- **E2E vs. unattended daemon** (Task 1 Step 7): confirm the headless client caches the E2E key so `ob sync --continuous` runs without a prompt; fall back to hook/scheduled `ob sync` if not.
