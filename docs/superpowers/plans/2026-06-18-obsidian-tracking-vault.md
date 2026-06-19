@@ -143,14 +143,14 @@ Expected: the log shows the daemon detecting + uploading `_synctest.md`. Then re
 - Consumes: `~/obsidian/AI/reminders/` (Task 1).
 - Produces: live reminder store at `~/obsidian/AI/reminders/`, readable by the hook through the repointed `~/.claude/reminders` symlink.
 
-- [ ] **Step 1: Snapshot the current hook output (baseline to diff against)**
+- [x] **Step 1: Snapshot the current hook output (baseline to diff against)**
 
 ```bash
 echo '{"cwd":"'"$HOME"'/Repos/crew"}' | node ~/.claude/hooks/reminder-checkin.mjs
 ```
 Expected: JSON listing the current reminders. Save this output to compare after the move.
 
-- [ ] **Step 2: Copy the real reminder files into the vault**
+- [x] **Step 2: Copy the real reminder files into the vault**
 
 ```bash
 cp -a ~/dotfiles/claude/reminders/. ~/obsidian/AI/reminders/
@@ -158,7 +158,7 @@ ls ~/obsidian/AI/reminders/ ~/obsidian/AI/reminders/archive/
 ```
 Expected: the `*.md` reminders + `README.md` + `archive/` contents now present under `~/obsidian/AI/reminders/`.
 
-- [ ] **Step 3: Repoint the canonical symlink to the vault**
+- [x] **Step 3: Repoint the canonical symlink to the vault**
 
 `~/.claude/reminders` currently points at `~/dotfiles/claude/reminders`. Repoint it at the vault:
 ```bash
@@ -168,14 +168,14 @@ readlink ~/.claude/reminders
 ```
 Expected: `/home/safturento/vault/reminders`.
 
-- [ ] **Step 4: Verify the hook reads identical reminders from the new location**
+- [x] **Step 4: Verify the hook reads identical reminders from the new location**
 
 ```bash
 echo '{"cwd":"'"$HOME"'/Repos/crew"}' | node ~/.claude/hooks/reminder-checkin.mjs
 ```
 Expected: same reminder set as the Step 1 baseline (the hook resolves symlinks via `realpathSync`, so this proves the repoint works).
 
-- [ ] **Step 5: Convert the dotfiles reminders dir into a pointer doc**
+- [x] **Step 5: Convert the dotfiles reminders dir into a pointer doc**
 
 Replace the body of `~/dotfiles/claude/reminders/README.md` so future readers aren't misled — the live store now lives in the vault:
 
@@ -189,7 +189,7 @@ The live reminder store now lives in the Obsidian vault at `~/obsidian/AI/remind
 This directory is retained only for git history; do not add reminders here.
 ```
 
-- [ ] **Step 6: Commit the dotfiles change**
+- [x] **Step 6: Commit the dotfiles change**
 
 ```bash
 cd ~/dotfiles
