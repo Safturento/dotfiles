@@ -209,14 +209,14 @@ git commit -m "chore(reminders): store moved into Obsidian vault; README is now 
 - Consumes: `~/obsidian/AI/projects/` (Task 1), the clean-name mapping (Global Constraints).
 - Produces: per-project `memories/` dirs in the vault, readable by the harness through inward symlinks.
 
-- [ ] **Step 1: List the real memory dirs to migrate**
+- [x] **Step 1: List the real memory dirs to migrate**
 
 ```bash
 find ~/.claude/projects -maxdepth 2 -name memory -type d
 ```
 Expected: the 5 dirs. For each, derive its clean folder name from the mapping table.
 
-- [ ] **Step 2: Migrate one memory dir (repeat per dir)**
+- [x] **Step 2: Migrate one memory dir (repeat per dir)**
 
 For the primary one (`-home-safturento` → `home`); repeat the same four commands for each remaining dir with its mapped clean name:
 ```bash
@@ -227,7 +227,7 @@ rm -rf ~/.claude/projects/$ENC/memory
 ln -s ~/obsidian/AI/projects/$CLEAN/memories ~/.claude/projects/$ENC/memory
 ```
 
-- [ ] **Step 3: Verify each canonical memory path still resolves to MEMORY.md**
+- [x] **Step 3: Verify each canonical memory path still resolves to MEMORY.md**
 
 ```bash
 for d in $(find ~/.claude/projects -maxdepth 2 -name memory); do
@@ -236,7 +236,7 @@ done
 ```
 Expected: every `memory` path is now a symlink resolving under `~/obsidian/AI/projects/<clean>/memories`, and the ones that had a `MEMORY.md` still show it.
 
-- [ ] **Step 4: Sanity-check the harness still loads memory**
+- [x] **Step 4: Sanity-check the harness still loads memory**
 
 Start a fresh Claude session in `~` and confirm the memory index still appears in context (the `# claudeMd` / memory block referencing `MEMORY.md`). Expected: unchanged from before the move.
 
