@@ -10,7 +10,7 @@ import { readFileSync, readdirSync, existsSync, realpathSync } from 'node:fs';
 import { join, dirname, basename, isAbsolute } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
+import { homedir, hostname } from 'node:os';
 
 export function localToday(d = new Date()) {
   const y = d.getFullYear();
@@ -78,6 +78,7 @@ export function readStore(dir) {
     reminders.push({
       name: parsed.data.name || e.name.replace(/\.md$/, ''),
       scope: parsed.data.scope,
+      device: parsed.data.device || null,
       due: parsed.data.due || null,
       status: parsed.data.status || 'active',
       body: parsed.body,
@@ -97,12 +98,18 @@ export function loadReminders(dir) {
  * gate — every active item surfaces regardless of date. Dated items sort first
  * (ascending, so overdue/soonest lead); undated items keep their file order
  * after. The living queue stays visible every session until items are archived.
+ *
+ * `device` filters for the shared (cloud-synced) reminder store: a reminder with
+ * a `device:` field surfaces only on that host, while device-agnostic reminders
+ * (no `device:`) surface everywhere. Passing `device = null` disables the filter
+ * entirely (back-compat for callers that don't care about the host).
  */
-export function selectReminders(reminders, project) {
+export function selectReminders(reminders, project, device = null) {
   return reminders
     .filter((r) =>
       r.status === 'active' &&
-      (r.scope === 'global' || r.scope === `project:${project}`),
+      (r.scope === 'global' || r.scope === `project:${project}`) &&
+      (!device || !r.device || r.device === device),
     )
     .sort((a, b) => {
       if (a.due && b.due) return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
@@ -188,14 +195,14 @@ export function renderSystemMessage(matched, today, malformed = []) {
   return lines.join('\n');
 }
 
-export function runCheckin({ remindersDir, cwd, today }) {
+export function runCheckin({ remindersDir, cwd, today, device = null }) {
   const project = resolveProject(cwd);
   // The queue surfaces in full every session — no per-day throttle. Items leave
   // only by being archived (status flips off `active`, so they drop out here).
   // Malformed files never make it into the queue, so we surface them separately
   // rather than letting a formatting slip silently swallow a task.
   const { reminders, malformed } = readStore(remindersDir);
-  const matched = selectReminders(reminders, project);
+  const matched = selectReminders(reminders, project, device);
   if (matched.length === 0 && malformed.length === 0) return null;
   return {
     systemMessage: renderSystemMessage(matched, today, malformed),
@@ -224,7 +231,7 @@ function main() {
   const cwd = input.cwd || process.cwd();
   const remindersDir = join(homedir(), '.claude', 'reminders');
   if (!existsSync(remindersDir)) return;
-  const out = runCheckin({ remindersDir, cwd, today: localToday() });
+  const out = runCheckin({ remindersDir, cwd, today: localToday(), device: hostname() });
   if (out) process.stdout.write(JSON.stringify(out));
 }
 
