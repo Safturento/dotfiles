@@ -2,17 +2,21 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **NOTE — this is interactive, user-level infra.** Deliverables live under `~/.claude`, `~/dotfiles`, and a new `~/vault`. Per the "Don't ticket — handle manually" convention there is **no Jira ticket**. Several tasks need the **Obsidian desktop app** (GUI), so this is **driven live in session, not via `crew run`**. Do not auto-start; wait for the go-signal.
+> **NOTE — this is interactive, user-level infra.** Deliverables live under `~/.claude`, `~/dotfiles`, and a new `~/obsidian/AI` (WSL ext4). Per the "Don't ticket — handle manually" convention there is **no Jira ticket**. Some steps run on the **Windows Obsidian desktop client** (GUI) and a few (`ob login`) need the user's Obsidian credentials, so this is **driven live in session, not via `crew run`**. Do not auto-start; wait for the go-signal.
+>
+> **Sync topology:** canonical files live on WSL at `~/obsidian/AI`; the `obsidian-headless` `ob sync --continuous` daemon (systemd user service) watches them and drives Obsidian Sync. The Windows desktop client opens the same remote vault at `C:/Obsidian/AI` for editing. Neither side reads across the WSL/Windows boundary.
 
 **Goal:** Stand up an Obsidian vault that is the unified, mobile-capable human view over reminders, memory, followups, and Jira — without breaking the SessionStart hook, PR-review of followups, or the Jira source-of-truth.
 
 **Architecture:** Reminders and memory physically relocate *into* the vault with canonical paths becoming inward symlinks (so MCPVault can read/write/search them and the hook/harness keep working through the links). Followups stay git-tracked in their repos and appear via outward symlinks (Obsidian-app-visible, MCP-blind). Jira is mirrored as plain-markdown snapshot notes written by Claude through the existing Atlassian MCP (no token ever enters the synced vault).
 
-**Tech Stack:** Obsidian + Obsidian Sync + Dataview plugin; MCPVault (`@bitbonsai/mcpvault`) MCP server; the existing dependency-free Node SessionStart hook (`reminder-checkin.mjs`); the existing Atlassian MCP.
+**Tech Stack:** Obsidian Sync via the `obsidian-headless` continuous-sync daemon (WSL) + Windows desktop client; Dataview plugin; MCPVault (`@bitbonsai/mcpvault`) MCP server; the existing dependency-free Node SessionStart hook (`reminder-checkin.mjs`); the existing Atlassian MCP.
 
 ## Global Constraints
 
-- **Vault path:** `~/vault` (confirmed default). Sync engine: **Obsidian Sync**.
+- **Vault path:** `~/obsidian/AI` on WSL ext4 (mirrors Windows `C:/Obsidian/AI`).
+- **Sync:** Obsidian Sync, driven on WSL by `obsidian-headless` (`ob sync --continuous`) as a **systemd user service**; Windows desktop client is a second device of the same remote vault. Requires an active **Obsidian Sync subscription**.
+- **Environment (verified):** Node v24.15 (headless needs ≥22 ✓); systemd is PID 1 (user services available ✓). The global npm prefix is under **fnm** (node-version-specific) — the systemd unit must use the **absolute** `ob` path / pin Node so it survives an fnm version switch.
 - **Hook stays dependency-free:** Node builtins only (`reminder-checkin.mjs` imports nothing external). Any change keeps that invariant.
 - **Reminder frontmatter invariant:** every reminder file must open with a `---` fence, carry `scope:`, and close the fence before the body. New `device:`/`project:` fields are additive and optional.
 - **Device identity:** `os.hostname()`. A reminder with **no** `device:` field is device-agnostic (surfaces everywhere — back-compat); a reminder with `device: <name>` surfaces only on that host (plus the existing scope rule).
@@ -31,65 +35,108 @@
 
 ---
 
-### Task 1: Create the vault skeleton and wire Obsidian + sync + Dataview
+### Task 1: Create the vault skeleton and stand up headless continuous sync
 
 **Files:**
-- Create: `~/vault/` and the folder skeleton below
-- Create: `~/vault/.gitignore` is N/A (vault is not git; synced via Obsidian Sync)
+- Create: `~/obsidian/AI/` and the folder skeleton below
+- Create: `~/.config/systemd/user/obsidian-sync.service`
 
 **Interfaces:**
-- Produces: the `~/vault` directory tree every later task writes into; the running Obsidian app with Sync + Dataview enabled.
+- Produces: the `~/obsidian/AI` directory tree every later task writes into; a running `obsidian-headless` continuous-sync daemon keeping it synced to the remote vault. (Vault is not git; synced via Obsidian Sync. The Windows desktop client + Dataview are wired in Task 8, when there's content to view.)
 
 - [ ] **Step 1: Create the folder skeleton**
 
 ```bash
-mkdir -p ~/vault/reminders/archive \
-         ~/vault/projects/_jira-only \
-         ~/vault/dashboards
+mkdir -p ~/obsidian/AI/reminders/archive \
+         ~/obsidian/AI/projects/_jira-only \
+         ~/obsidian/AI/dashboards
 ```
 
 - [ ] **Step 2: Verify the skeleton exists**
 
 ```bash
-find ~/vault -type d | sort
+find ~/obsidian/AI -type d | sort
 ```
-Expected: lists `~/vault`, `~/vault/dashboards`, `~/vault/projects`, `~/vault/projects/_jira-only`, `~/vault/reminders`, `~/vault/reminders/archive`.
+Expected: lists `~/obsidian/AI`, `~/obsidian/AI/dashboards`, `~/obsidian/AI/projects`, `~/obsidian/AI/projects/_jira-only`, `~/obsidian/AI/reminders`, `~/obsidian/AI/reminders/archive`.
 
-- [ ] **Step 3 (interactive, GUI): Open the vault in Obsidian**
-
-Open Obsidian → "Open folder as vault" → select `~/vault`. Confirm it opens with the empty folder tree visible.
-
-- [ ] **Step 4 (interactive, GUI): Enable Obsidian Sync**
-
-Settings → Core plugins → enable **Sync** → set up / select a remote vault → confirm "Fully synced" status.
-
-- [ ] **Step 5 (interactive, GUI): Install the Dataview community plugin**
-
-Settings → Community plugins → Browse → install **Dataview** → enable it.
-
-- [ ] **Step 6: Verify Obsidian recorded the plugin**
+- [ ] **Step 3: Install the headless client**
 
 ```bash
-ls ~/vault/.obsidian/plugins/
+npm install -g obsidian-headless
+command -v ob && ob --version
 ```
-Expected: includes `dataview`.
+Expected: `ob` resolves (under the fnm node path) and prints a version. Record the absolute path from `command -v ob` — the systemd unit (Step 6) needs it.
 
-- [ ] **Step 7: Confirm sync engine symlink behavior (spec open item)**
+- [ ] **Step 4 (interactive — user runs; needs Obsidian credentials): Authenticate**
 
-After Task 4 creates an outward symlink, re-open Obsidian on a second synced device (or check Sync logs) and confirm the symlink isn't corrupted/duplicated. If the engine mishandles in-vault symlinks, note it and exclude `**/followups.md` symlinks from sync via Obsidian Sync's selective-sync. *(No action now if single-device; revisit when a second device is added.)*
+The user runs this themselves (it prompts for email/password/MFA; do not type their credentials). Suggest they run it in-session with the `!` prefix:
+```
+! ob login
+```
+Expected: "Logged in" confirmation. The auth token is written under `~/.config` (NOT in the vault) — never read or echo it.
+
+- [ ] **Step 5: Connect the vault to the remote and do the initial sync**
+
+Create/connect the remote vault named `AI` from the WSL side so the (about-to-be-populated) canonical files seed the remote:
+```bash
+cd ~/obsidian/AI
+ob sync-setup --vault "AI"
+ob sync
+```
+Expected: `sync-setup` registers the vault; the one-shot `ob sync` reports an initial sync with 0 conflicts. *(If a remote vault named `AI` already exists from a prior Windows setup, `sync-setup` connects to it instead — confirm the name matches.)*
+
+- [ ] **Step 6: Install the continuous-sync systemd user service**
+
+Create `~/.config/systemd/user/obsidian-sync.service` (replace `<OB_PATH>` with the absolute path from Step 3, and `<NODE_BIN_DIR>` with `dirname` of the current node so the fnm-pinned Node is on PATH):
+```ini
+[Unit]
+Description=Obsidian headless continuous sync for ~/obsidian/AI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/obsidian/AI
+Environment=PATH=<NODE_BIN_DIR>:/usr/local/bin:/usr/bin:/bin
+ExecStart=<OB_PATH> sync --continuous
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
+- [ ] **Step 7: Enable + start the service, and enable lingering so it survives logout/WSL idle**
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now obsidian-sync.service
+loginctl enable-linger "$USER"
+systemctl --user status obsidian-sync.service --no-pager
+```
+Expected: service `active (running)`. *(`enable-linger` lets the user service keep running without an interactive login — needed so Claude's writes sync even when you're only on the Windows client. May require one `sudo` for `loginctl enable-linger`; if it prompts, the user runs that line with `!`.)*
+
+- [ ] **Step 8: Verify continuous sync picks up a change**
+
+```bash
+echo "sync canary $(date)" > ~/obsidian/AI/dashboards/_synctest.md
+sleep 5
+journalctl --user -u obsidian-sync.service -n 20 --no-pager
+```
+Expected: the log shows the daemon detecting + uploading `_synctest.md`. Then remove it: `rm ~/obsidian/AI/dashboards/_synctest.md` (the deletion should also sync).
 
 ---
 
 ### Task 2: Relocate reminders into the vault (inward symlink)
 
 **Files:**
-- Move: `~/dotfiles/claude/reminders/*.md` + `archive/*` → `~/vault/reminders/`
-- Replace symlink: `~/.claude/reminders` → `~/vault/reminders`
+- Move: `~/dotfiles/claude/reminders/*.md` + `archive/*` → `~/obsidian/AI/reminders/`
+- Replace symlink: `~/.claude/reminders` → `~/obsidian/AI/reminders`
 - Modify: `~/dotfiles/claude/reminders/README.md` (becomes a pointer doc)
 
 **Interfaces:**
-- Consumes: `~/vault/reminders/` (Task 1).
-- Produces: live reminder store at `~/vault/reminders/`, readable by the hook through the repointed `~/.claude/reminders` symlink.
+- Consumes: `~/obsidian/AI/reminders/` (Task 1).
+- Produces: live reminder store at `~/obsidian/AI/reminders/`, readable by the hook through the repointed `~/.claude/reminders` symlink.
 
 - [ ] **Step 1: Snapshot the current hook output (baseline to diff against)**
 
@@ -101,17 +148,17 @@ Expected: JSON listing the current reminders. Save this output to compare after 
 - [ ] **Step 2: Copy the real reminder files into the vault**
 
 ```bash
-cp -a ~/dotfiles/claude/reminders/. ~/vault/reminders/
-ls ~/vault/reminders/ ~/vault/reminders/archive/
+cp -a ~/dotfiles/claude/reminders/. ~/obsidian/AI/reminders/
+ls ~/obsidian/AI/reminders/ ~/obsidian/AI/reminders/archive/
 ```
-Expected: the `*.md` reminders + `README.md` + `archive/` contents now present under `~/vault/reminders/`.
+Expected: the `*.md` reminders + `README.md` + `archive/` contents now present under `~/obsidian/AI/reminders/`.
 
 - [ ] **Step 3: Repoint the canonical symlink to the vault**
 
 `~/.claude/reminders` currently points at `~/dotfiles/claude/reminders`. Repoint it at the vault:
 ```bash
 rm ~/.claude/reminders
-ln -s ~/vault/reminders ~/.claude/reminders
+ln -s ~/obsidian/AI/reminders ~/.claude/reminders
 readlink ~/.claude/reminders
 ```
 Expected: `/home/safturento/vault/reminders`.
@@ -130,7 +177,7 @@ Replace the body of `~/dotfiles/claude/reminders/README.md` so future readers ar
 ```markdown
 # Reminders store — MOVED
 
-The live reminder store now lives in the Obsidian vault at `~/vault/reminders/`.
+The live reminder store now lives in the Obsidian vault at `~/obsidian/AI/reminders/`.
 `~/.claude/reminders` is a symlink into the vault. See
 `docs/superpowers/specs/2026-06-18-obsidian-tracking-vault-design.md`.
 
@@ -150,11 +197,11 @@ git commit -m "chore(reminders): store moved into Obsidian vault; README is now 
 ### Task 3: Relocate memory into the vault (inward symlinks) with clean names
 
 **Files:**
-- Move: each `~/.claude/projects/<enc>/memory/` → `~/vault/projects/<clean>/memories/`
+- Move: each `~/.claude/projects/<enc>/memory/` → `~/obsidian/AI/projects/<clean>/memories/`
 - Replace symlink: each `~/.claude/projects/<enc>/memory` → the vault location
 
 **Interfaces:**
-- Consumes: `~/vault/projects/` (Task 1), the clean-name mapping (Global Constraints).
+- Consumes: `~/obsidian/AI/projects/` (Task 1), the clean-name mapping (Global Constraints).
 - Produces: per-project `memories/` dirs in the vault, readable by the harness through inward symlinks.
 
 - [ ] **Step 1: List the real memory dirs to migrate**
@@ -169,10 +216,10 @@ Expected: the 5 dirs. For each, derive its clean folder name from the mapping ta
 For the primary one (`-home-safturento` → `home`); repeat the same four commands for each remaining dir with its mapped clean name:
 ```bash
 ENC=-home-safturento ; CLEAN=home
-mkdir -p ~/vault/projects/$CLEAN
-cp -a ~/.claude/projects/$ENC/memory ~/vault/projects/$CLEAN/memories
+mkdir -p ~/obsidian/AI/projects/$CLEAN
+cp -a ~/.claude/projects/$ENC/memory ~/obsidian/AI/projects/$CLEAN/memories
 rm -rf ~/.claude/projects/$ENC/memory
-ln -s ~/vault/projects/$CLEAN/memories ~/.claude/projects/$ENC/memory
+ln -s ~/obsidian/AI/projects/$CLEAN/memories ~/.claude/projects/$ENC/memory
 ```
 
 - [ ] **Step 3: Verify each canonical memory path still resolves to MEMORY.md**
@@ -182,7 +229,7 @@ for d in $(find ~/.claude/projects -maxdepth 2 -name memory); do
   echo "$d -> $(readlink -f "$d")"; ls "$d/MEMORY.md" 2>/dev/null || echo "  (no MEMORY.md)";
 done
 ```
-Expected: every `memory` path is now a symlink resolving under `~/vault/projects/<clean>/memories`, and the ones that had a `MEMORY.md` still show it.
+Expected: every `memory` path is now a symlink resolving under `~/obsidian/AI/projects/<clean>/memories`, and the ones that had a `MEMORY.md` still show it.
 
 - [ ] **Step 4: Sanity-check the harness still loads memory**
 
@@ -193,10 +240,10 @@ Start a fresh Claude session in `~` and confirm the memory index still appears i
 ### Task 4: Surface followups via outward symlinks
 
 **Files:**
-- Create: `~/vault/projects/<clean>/followups.md` → symlink to `<repo>/docs/followups.md` for each active repo
+- Create: `~/obsidian/AI/projects/<clean>/followups.md` → symlink to `<repo>/docs/followups.md` for each active repo
 
 **Interfaces:**
-- Consumes: `~/vault/projects/` (Task 1); the repo list (`~/Repos/*/docs/followups.md`).
+- Consumes: `~/obsidian/AI/projects/` (Task 1); the repo list (`~/Repos/*/docs/followups.md`).
 - Produces: Obsidian-app-visible followups per project (MCP-blind by design).
 
 - [ ] **Step 1: List repos with a followups file**
@@ -210,14 +257,14 @@ Expected: e.g. `Recipes`, `crew`, `home-assistant`, `skadimetric`, plus active w
 
 ```bash
 CLEAN=crew ; REPO=~/Repos/crew
-mkdir -p ~/vault/projects/$CLEAN
-ln -s "$REPO/docs/followups.md" ~/vault/projects/$CLEAN/followups.md
+mkdir -p ~/obsidian/AI/projects/$CLEAN
+ln -s "$REPO/docs/followups.md" ~/obsidian/AI/projects/$CLEAN/followups.md
 ```
 
 - [ ] **Step 3: Verify the symlinks resolve**
 
 ```bash
-for f in ~/vault/projects/*/followups.md; do echo "$f -> $(readlink -f "$f")"; done
+for f in ~/obsidian/AI/projects/*/followups.md; do echo "$f -> $(readlink -f "$f")"; done
 ```
 Expected: each resolves to a real `docs/followups.md` in its repo.
 
@@ -361,13 +408,13 @@ git commit -m "feat(hooks): per-device reminder filtering for the synced vault"
 - Modify: `~/.claude.json` (`mcpServers`) — via the `claude mcp` CLI, not hand-edit
 
 **Interfaces:**
-- Consumes: the `~/vault` path; the real files placed by Tasks 2–3.
+- Consumes: the `~/obsidian/AI` path; the real files placed by Tasks 2–3.
 - Produces: MCP tools (`read_note`, `write_note`, `search_notes`, `update_frontmatter`, …) scoped to the vault, used by Task 7.
 
 - [ ] **Step 1: Add the server (user scope)**
 
 ```bash
-claude mcp add obsidian-vault --scope user -- npx -y @bitbonsai/mcpvault@latest ~/vault
+claude mcp add obsidian-vault --scope user -- npx -y @bitbonsai/mcpvault@latest ~/obsidian/AI
 ```
 
 - [ ] **Step 2: Verify it registered**
@@ -399,7 +446,7 @@ Create `~/.claude/skills/sync-jira-vault/SKILL.md`:
 ```markdown
 ---
 name: sync-jira-vault
-description: Use when asked to refresh the Jira mirror in the Obsidian vault ("sync jira to vault", "refresh jira notes"). Pulls the planning-queue + open issues via the Atlassian MCP and writes per-project snapshot notes into ~/vault/projects/<clean>/jira/. No Jira token ever touches the vault.
+description: Use when asked to refresh the Jira mirror in the Obsidian vault ("sync jira to vault", "refresh jira notes"). Pulls the planning-queue + open issues via the Atlassian MCP and writes per-project snapshot notes into ~/obsidian/AI/projects/<clean>/jira/. No Jira token ever touches the vault.
 ---
 
 # Sync Jira → Obsidian vault
@@ -411,7 +458,7 @@ description: Use when asked to refresh the Jira mirror in the Obsidian vault ("s
 3. For each issue, map its project key to a clean folder via the table in
    `docs/superpowers/specs/2026-06-18-obsidian-tracking-vault-design.md`
    (CREW → projects/crew). Unmapped keys → projects/_jira-only/<KEY>/.
-4. Write `~/vault/projects/<clean>/jira/<KEY>.md` via the obsidian-vault MCP
+4. Write `~/obsidian/AI/projects/<clean>/jira/<KEY>.md` via the obsidian-vault MCP
    `write_note`, with this frontmatter + body:
 
    ---
@@ -441,30 +488,42 @@ NEVER write a Jira API token into the vault — all Jira access is via the MCP.
 
 - [ ] **Step 2: Dry-run the skill for one project**
 
-Invoke the skill scoped to a single project (e.g. "sync jira to vault for CREW only"). Expected: `~/vault/projects/crew/jira/*.md` notes appear with correct frontmatter.
+Invoke the skill scoped to a single project (e.g. "sync jira to vault for CREW only"). Expected: `~/obsidian/AI/projects/crew/jira/*.md` notes appear with correct frontmatter.
 
 - [ ] **Step 3: Verify the notes are MCP-searchable and token-free**
 
 ```bash
-ls ~/vault/projects/crew/jira/
-grep -ril "token\|api[_-]key" ~/vault/projects/ || echo "clean: no secrets in vault"
+ls ~/obsidian/AI/projects/crew/jira/
+grep -ril "token\|api[_-]key" ~/obsidian/AI/projects/ || echo "clean: no secrets in vault"
 ```
 Expected: Jira notes present; "clean: no secrets in vault".
 
 ---
 
-### Task 8: Dataview dashboards (the unified human view)
+### Task 8: Windows client + Dataview dashboards (the unified human view)
 
 **Files:**
-- Create: `~/vault/dashboards/home.md`
-- Create: `~/vault/dashboards/jira.md`
+- Create: `~/obsidian/AI/dashboards/home.md`
+- Create: `~/obsidian/AI/dashboards/jira.md`
 
 **Interfaces:**
-- Consumes: reminders (real files), memory, Jira notes (real files), followups (symlinked, app-readable). Dataview indexes everything the Obsidian app can see.
+- Consumes: reminders (real files), memory, Jira notes (real files), followups (symlinked, app-readable). Dataview indexes everything the Obsidian app can see. By now Tasks 2/3/4/7 have populated the vault and the headless daemon (Task 1) has synced it to the remote.
 
-- [ ] **Step 1: Write the home dashboard**
+- [ ] **Step 1 (interactive, Windows GUI): Connect the Windows desktop client**
 
-Create `~/vault/dashboards/home.md`:
+On Windows, open Obsidian → Sync → log in to the same account → connect the remote vault `AI` to a local folder at `C:/Obsidian/AI`. Confirm it downloads the synced content (reminders/, projects/, dashboards/) and shows "Fully synced".
+
+- [ ] **Step 2 (interactive, Windows GUI): Install + enable Dataview**
+
+On the Windows client: Settings → Community plugins → Browse → install **Dataview** → enable it. Its config syncs down to the WSL replica automatically.
+
+- [ ] **Step 3: Verify the symlink-over-sync behavior (spec open item)**
+
+On the Windows client, open a project that has a `followups.md` (an outward symlink on WSL). Confirm whether Obsidian Sync replicated the followup **content** or a broken/empty symlink stub. Expected/acceptable: followups may not render on Windows (the symlink targets a WSL repo path). If they sync as broken stubs that cause conflict churn, exclude `**/followups.md` via Obsidian Sync selective-sync, and rely on the WSL-side app/Dataview for followups. Record the observed behavior here.
+
+- [ ] **Step 4: Write the home dashboard**
+
+Create `~/obsidian/AI/dashboards/home.md`:
 ````markdown
 # Home — what needs doing
 
@@ -491,9 +550,9 @@ SORT updated desc
 - [[projects/Recipes/followups|Recipes]]
 ````
 
-- [ ] **Step 2: Write the Jira board dashboard**
+- [ ] **Step 5: Write the Jira board dashboard**
 
-Create `~/vault/dashboards/jira.md`:
+Create `~/obsidian/AI/dashboards/jira.md`:
 ````markdown
 # Jira board
 
@@ -504,9 +563,9 @@ SORT status asc, updated desc
 ```
 ````
 
-- [ ] **Step 3 (interactive, GUI): Verify the dashboards render**
+- [ ] **Step 6 (interactive, Windows GUI): Verify the dashboards render**
 
-Open `dashboards/home.md` in Obsidian (Dataview enabled). Expected: the reminders table populates from your real reminder files; the Jira table populates from Task 7's notes; the followups links open the symlinked repo files. Adjust the followups link list to match the projects that actually have followups.
+Open `dashboards/home.md` on the Windows client (Dataview enabled). Expected: the reminders table populates from your real reminder files; the Jira table populates from Task 7's notes. Adjust the followups link list to match the projects that actually have followups (and per Step 3, followups links may be WSL-only). Cross-check on mobile if desired.
 
 ---
 
@@ -517,12 +576,12 @@ Open `dashboards/home.md` in Obsidian (Dataview enabled). Expected: the reminder
 - Four sources (reminders, memory, followups, Jira) → Tasks 2, 3, 4, 7. ✓
 - Symlinks live/no-sync for files; inward direction → Tasks 2, 3. ✓
 - Followups git-tracked + outward symlink → Task 4. ✓
-- Cloud-sync + `device:` tag + hook filter → Tasks 1 (Sync) & 5 (device). ✓
+- Cloud-sync via headless continuous-sync daemon + `device:` tag + hook filter → Task 1 (headless sync) & Task 5 (device). ✓
 - Jira MCP snapshot notes, per-project folders, `_jira-only` fallback, no token in vault → Task 7. ✓
 - Clean-name mapping (memory + followups + Jira converge) → Global Constraints + Tasks 3, 4, 7. ✓
 - MCPVault registration + boundary-guard verification → Task 6. ✓
-- Dataview cross-project dashboards → Task 8. ✓
-- Sync-engine symlink caveat → Task 1 Step 7. ✓
+- Windows desktop client + Dataview cross-project dashboards → Task 8. ✓
+- Sync-engine symlink-over-sync caveat → Task 8 Step 3. ✓
 - Out-of-scope (custom Jira plugin, scheduled refresh) → intentionally not tasked. ✓
 
 **Placeholder scan:** No TBD/TODO; all code and commands are concrete. Per-repo/per-dir loops show the exact command with one worked example and the repeat rule.
@@ -530,6 +589,6 @@ Open `dashboards/home.md` in Obsidian (Dataview enabled). Expected: the reminder
 **Type consistency:** `selectReminders(reminders, project, device=null)` and `runCheckin({…, device})` used consistently across Task 5 steps and tests; `device` field name matches frontmatter key and `readStore` capture.
 
 ## Open items carried from the spec (confirm during execution)
-- Vault path `~/vault` + Obsidian Sync (defaulted — change here if desired before Task 1).
 - Exact clean-name rows for every active repo/Jira key (table is seeded; extend in Task 3/4/7 as encountered).
-- Sync-engine symlink behavior on a second device (Task 1 Step 7).
+- Sync-engine symlink-over-sync behavior on the Windows client (Task 8 Step 3) — determines whether `**/followups.md` needs selective-sync exclusion.
+- Headless `ob sync-setup` remote-vault naming: confirm whether a remote `AI` already exists (Windows-first) or is created from WSL (Task 1 Step 5).

@@ -97,12 +97,13 @@ Because `~/.claude/reminders` on each machine now symlinks into a **shared** syn
 
 - Reminders / memory / followups: **no refresh step** — symlinks make them inherently live and bidirectional (edit in Obsidian/mobile → writes straight to canonical; a new note in `vault/reminders/` *is* a real reminder the hook surfaces).
 - Jira: MCP snapshot notes refreshed **on-demand** via a small skill to start. A scheduled `/schedule` agent is a later upgrade if staleness bites.
-- Vault is **cloud-synced** via the user's sync engine of choice for mobile access.
+- Vault is **cloud-synced via Obsidian Sync**, bridged across the WSL/Windows boundary by the **Obsidian headless client** (`obsidian-headless`). Canonical files live on WSL ext4 at `~/obsidian/AI` (mirroring the Windows path `C:/Obsidian/AI`), where a headless `ob sync --continuous` daemon (systemd **user** service) watches and syncs them to the remote vault. The Windows desktop client opens the same remote vault at `C:/Obsidian/AI` for human editing; mobile gets it via the same remote. Net effect: Claude/MCP/hook access stays native on WSL and the human edits a native Windows vault — neither side reads across the boundary. The headless auth token lives under `~/.config` (set by `ob login`), **not** in the vault, so no secret syncs.
 
 ## Tooling
 
-- Register **MCPVault** in `~/.claude.json` `mcpServers`, pointing `npx @bitbonsai/mcpvault@latest <vault-path>`. Gives Claude read/write/search over reminders + memory + Jira notes (followups remain read-via-repo).
-- Obsidian **Dataview** plugin for the cross-project dashboards — the core human-friendliness payoff (all followups / reminders / Jira in one queryable table).
+- **Obsidian Sync subscription** (required by the headless client) + the **`obsidian-headless`** npm package (needs Node ≥22) running as a systemd user service on WSL.
+- Register **MCPVault** in `~/.claude.json` `mcpServers`, pointing `npx @bitbonsai/mcpvault@latest ~/obsidian/AI`. Gives Claude read/write/search over reminders + memory + Jira notes (followups remain read-via-repo).
+- Obsidian **Dataview** plugin for the cross-project dashboards — the core human-friendliness payoff (all followups / reminders / Jira in one queryable table). Installed via the Windows desktop client (the headless client has no plugin UI); its config syncs down to the WSL replica.
 
 ## Out of scope / future enhancements
 
@@ -111,7 +112,7 @@ Because `~/.claude/reminders` on each machine now symlinks into a **shared** syn
 
 ## Open items to resolve in the plan
 
-- **Vault path + sync engine.** Proposed default: `~/vault` synced via Obsidian Sync. Confirm before implementing.
+- **Vault path + sync engine.** ✅ Resolved: `~/obsidian/AI` on WSL ext4 (mirrors Windows `C:/Obsidian/AI`), synced via Obsidian Sync driven by the `obsidian-headless` continuous-sync daemon (systemd user service) on WSL + the Windows desktop client.
 - **Reminder real-bytes relocation.** Reminders currently real-live in `~/dotfiles/claude/reminders` (with tracked `README.md` + `archive/.gitkeep`). Moving real bytes into the vault means deciding the fate of that dotfiles dir (retire it, or repoint `~/.claude/reminders` directly at the vault and keep the README as documentation). Detail for the plan.
 - **Exact clean-name mapping table** for the 5 existing memory dirs + active repos + Jira keys.
 - **Sync-engine symlink behavior** verification (see subtlety above).
