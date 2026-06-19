@@ -50,6 +50,32 @@ test('selectReminders: scope + status filtering, due is NOT a gate', () => {
   assert.deepEqual(got, ['past', 'future', 'g', 'c']);
 });
 
+test('readStore captures the optional device field', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rem-'));
+  writeFileSync(join(dir, 'a.md'), '---\nname: a\nscope: global\ndevice: wsl-desktop\n---\nbody');
+  const { reminders } = readStore(dir);
+  assert.equal(reminders[0].device, 'wsl-desktop');
+});
+
+test('selectReminders: device-agnostic items always show; device-tagged items only on match', () => {
+  const rs = [
+    { name: 'anydev', scope: 'global', due: null, status: 'active', body: '', device: undefined },
+    { name: 'thisdev', scope: 'global', due: null, status: 'active', body: '', device: 'wsl-desktop' },
+    { name: 'otherdev', scope: 'global', due: null, status: 'active', body: '', device: 'mac-mini' },
+  ];
+  const got = selectReminders(rs, 'crew', 'wsl-desktop').map((r) => r.name);
+  assert.deepEqual(got, ['anydev', 'thisdev']);
+});
+
+test('selectReminders: device=null disables the device filter (back-compat)', () => {
+  const rs = [
+    { name: 'thisdev', scope: 'global', due: null, status: 'active', body: '', device: 'wsl-desktop' },
+    { name: 'otherdev', scope: 'global', due: null, status: 'active', body: '', device: 'mac-mini' },
+  ];
+  const got = selectReminders(rs, 'crew', null).map((r) => r.name);
+  assert.deepEqual(got, ['thisdev', 'otherdev']);
+});
+
 test('dueLabel: empty when undated, OVERDUE when due < today', () => {
   assert.equal(dueLabel(null, '2026-06-08'), '');
   assert.equal(dueLabel('2026-06-09', '2026-06-08'), ' due 2026-06-09');

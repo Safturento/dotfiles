@@ -57,6 +57,7 @@ A reminder is a note-to-future-self that should surface in the right **project**
 ---
 name: <kebab-slug>
 scope: global | project:<name>     # project:<name> = the target repo's directory name
+device: <hostname>                 # OPTIONAL — restrict surfacing to one machine (e.g. Safturento-Desktop); omit = surfaces on all machines.
 due: 2026-06-09                    # OPTIONAL deadline only — omit for ordinary queue items. Set just when there's a real do-by date (resolve "tomorrow"/"Friday" to absolute); dated items sort first + flag OVERDUE. NOT a hide-until date.
 created: <today>
 source_session: <this session id>
