@@ -436,7 +436,7 @@ claude mcp list | grep obsidian-vault
 ```
 Expected: `obsidian-vault` listed.
 
-- [ ] **Step 3: Verify connectivity in a fresh session**
+- [x] **Step 3: Verify connectivity in a fresh session**
 
 Start a new Claude session and confirm the `obsidian-vault` MCP tools are available (e.g. `get_vault_stats` returns counts), and that `search_notes` finds a reminder but does **not** return a followups file (out-of-vault symlink — boundary guard working as designed).
 Expected: reminders/memory searchable; followups absent from MCP results.
@@ -521,17 +521,19 @@ Expected: Jira notes present; "clean: no secrets in vault".
 **Interfaces:**
 - Consumes: reminders (real files), memory, Jira notes (real files), followups (symlinked, app-readable). Dataview indexes everything the Obsidian app can see. By now Tasks 2/3/4/7 have populated the vault and the headless daemon (Task 1) has synced it to the remote.
 
-- [ ] **Step 1 (interactive, Windows GUI): Connect the Windows desktop client**
+- [x] **Step 1 (interactive, Windows GUI): Connect the Windows desktop client**
 
 On Windows, open Obsidian → Sync → log in to the same account → connect the remote vault `AI` to a local folder at `C:/Obsidian/AI`. Confirm it downloads the synced content (reminders/, projects/, dashboards/) and shows "Fully synced".
 
-- [ ] **Step 2 (interactive, Windows GUI): Install + enable Dataview**
+- [x] **Step 2 (interactive, Windows GUI): Install + enable Dataview**
 
 On the Windows client: Settings → Community plugins → Browse → install **Dataview** → enable it. Its config syncs down to the WSL replica automatically.
 
-- [ ] **Step 3: Verify the symlink-over-sync behavior on Windows (mostly answered in Task 4 Step 4)**
+- [x] **Step 3: Verify the symlink-over-sync behavior on Windows (mostly answered in Task 4 Step 4)**
 
-Already established on the WSL/daemon side (Task 4 Step 4): the daemon dereferences the symlinks and uploads followup **content**, so Windows should show real, readable followup files. On the Windows client, just confirm `projects/<proj>/followups.md` renders the expected content. Per the write-back caveat, **don't edit followups on Windows** — edit them in the repo. (Optional: run the one-time Windows-edit write-back check from Task 4 Step 4.)
+Already established on the WSL/daemon side (Task 4 Step 4): the daemon dereferences the symlinks and uploads followup **content**, so Windows shows real, readable followup files.
+
+**Write-back CONFIRMED (2026-06-18):** edited a followup on the Windows client → it propagated Windows → remote → daemon → **wrote *through* the WSL symlink into the actual repo file** (`~/Repos/crew/docs/followups.md` showed the edit as an uncommitted ` M` change), and the **WSL symlink stayed intact** (not replaced). Conclusion: followups are fully editable from any device and edits land as normal uncommitted changes in the git repo — **no selective-sync exclusion needed**. Caveat: casual Windows/mobile edits dirty the repo working tree (recoverable; commit or `git checkout`). Convention stands: followups change via the repo/PR flow.
 
 - [x] **Step 4: Write the home dashboard**
 
@@ -575,7 +577,7 @@ SORT status asc, updated desc
 ```
 ````
 
-- [ ] **Step 6 (interactive, Windows GUI): Verify the dashboards render**
+- [x] **Step 6 (interactive, Windows GUI): Verify the dashboards render**
 
 Open `dashboards/home.md` on the Windows client (Dataview enabled). Expected: the reminders table populates from your real reminder files; the Jira table populates from Task 7's notes. Adjust the followups link list to match the projects that actually have followups (and per Step 3, followups links may be WSL-only). Cross-check on mobile if desired.
 
@@ -600,8 +602,11 @@ Open `dashboards/home.md` on the Windows client (Dataview enabled). Expected: th
 
 **Type consistency:** `selectReminders(reminders, project, device=null)` and `runCheckin({…, device})` used consistently across Task 5 steps and tests; `device` field name matches frontmatter key and `readStore` capture.
 
-## Open items carried from the spec (confirm during execution)
-- Exact clean-name rows for every active repo/Jira key (table is seeded; extend in Task 3/4/7 as encountered).
-- Sync-engine symlink-over-sync behavior on the Windows client (Task 8 Step 3) — determines whether `**/followups.md` needs selective-sync exclusion.
-- ✅ Remote vault resolved: `AI` already exists (Windows-created, connected to Sync, **E2E encrypted**). `sync-setup` connects to it; the user enters the E2E password manually (Task 1 Step 5).
-- **E2E vs. unattended daemon** (Task 1 Step 7): confirm the headless client caches the E2E key so `ob sync --continuous` runs without a prompt; fall back to hook/scheduled `ob sync` if not.
+## Open items — all resolved during execution (2026-06-18)
+- Exact clean-name rows for every active repo/Jira key (table seeded; extended for home-assistant, Recipes, skadimetric, KAN/HAI keys during Tasks 3/4/7).
+- ✅ **Symlink-over-sync RESOLVED** (Task 8 Step 3): daemon dereferences + uploads content; Windows edits write *through* the WSL symlink into the repo file; symlink stays intact. **No selective-sync exclusion needed.**
+- ✅ **Remote vault**: `AI` already existed (Windows-created, E2E). `sync-setup` connected; user entered the E2E password (Task 1 Step 5).
+- ✅ **E2E vs. unattended daemon** (Task 1 Step 7): the first manual unlock cached the E2E key — `ob sync --continuous` runs as a systemd user service with no prompt; no fallback needed.
+- ✅ **MCP boundary guard** (Task 6 Step 3): verified in a fresh session — `search_notes` finds reminders/memory/Jira but returns **no** followup files (out-of-vault symlinks blocked), exactly as designed.
+
+**Status: all 8 tasks complete and verified.**
