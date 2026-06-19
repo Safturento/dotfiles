@@ -1,38 +1,17 @@
-# Reminders store
+# Reminders store — MOVED
 
-Cross-session reminders surfaced by the `reminder-checkin.mjs` SessionStart hook.
-One `<slug>.md` file per reminder. See the "Reminders (cross-session)" section of
-`~/.claude/CLAUDE.md` for the authoring convention and
-`docs/superpowers/specs/2026-06-05-cross-session-reminders-design.md` for the design.
+The live reminder store now lives in the Obsidian vault at `~/obsidian/AI/reminders/`.
+`~/.claude/reminders` is a symlink into the vault, so the `reminder-checkin.mjs`
+SessionStart hook still reads it transparently (it resolves symlinks via `realpathSync`).
 
-Reminder files are **local-only** — gitignored, never committed. The store must
-survive branch switches and is never referenced from git history, so its contents
-live only on this machine. Only this `README.md` and `archive/.gitkeep` are tracked,
-so the directories always exist on a fresh checkout (the `~/.claude/reminders`
-symlink would dangle otherwise).
+See `docs/superpowers/specs/2026-06-18-obsidian-tracking-vault-design.md` for the
+design and `docs/superpowers/plans/2026-06-18-obsidian-tracking-vault.md` for the
+migration. The earlier file-store design is at
+`docs/superpowers/specs/2026-06-05-cross-session-reminders-design.md`.
 
-- Active reminders: `*.md` in this directory. The whole active set is a living
-  queue — it surfaces in full at the start of *every* session in scope.
-- Resolved/dismissed: moved to `archive/` (never surfaced). Archiving is the only
-  way to stop an item resurfacing.
+**Note:** reminders are no longer local-only — the vault is cloud-synced via Obsidian
+Sync (E2E encrypted) so they reach the Windows client and mobile. Per-machine
+filtering is handled by the optional `device:` frontmatter field (see the
+"Reminders (cross-session)" section of `~/.claude/CLAUDE.md`).
 
-## Frontmatter
-
-The file **must** begin with a `---` fence and close the frontmatter with another
-`---` before the body. The hook parses only fenced frontmatter — a fence-less file
-is skipped (never reaches the queue) and surfaces as a `⚠️ MALFORMED REMINDER FILE`
-warning at SessionStart until fixed.
-
-```markdown
----
-name: <kebab-slug>
-scope: global | project:<name>
-due: 2026-06-09            # optional deadline only; dated items sort first + flag OVERDUE. NOT a hide-until date.
-created: 2026-06-05
-source_session: <id>
-done_when: <completion condition>   # optional
-status: active            # active | done
----
-
-<the reminder body goes here>
-```
+This directory is retained only for git history; **do not add reminders here.**
