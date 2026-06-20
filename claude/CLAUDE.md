@@ -47,7 +47,7 @@ The moment we decide something is worth planning — a followup graduating, a fr
 
 ## Reminders (cross-session)
 
-A reminder is a note-to-future-self that should surface in the right **project** (or globally), even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook. The store is a **living queue**: every active item (global + items for the current repo) surfaces at the start of *every* session — no per-day throttle, no hiding until a date. Items leave the queue only by being archived. When the hook surfaces reminders, raise them as the first action of the session, before engaging the user's request.
+A reminder is a note-to-future-self that should surface in the right **project** (or globally), even one set from a different project. The canonical home is the file store at `~/.claude/reminders/` — surfaced by the `reminder-checkin.mjs` SessionStart hook. The store is a **living queue**: every active item (global + items for the current repo) surfaces at the start of *every* session — no per-day throttle, no hiding until a date. Items leave the queue only by being archived.
 
 `due` is a **deadline / priority signal, not a visibility gate.** Most items have no `due` and just ride the queue, getting pushed back session after session until done — that's expected. Set `due` only when something genuinely must happen by a specific date. Dated items sort to the top (soonest first, then undated) and a passed deadline is flagged `OVERDUE` — meaning: do these before the undated ones, don't ignore them until the date arrives.
 
