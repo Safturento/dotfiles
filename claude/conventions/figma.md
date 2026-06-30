@@ -4,6 +4,29 @@ Read when about to do non-trivial work in Figma via `use_figma` / the Figma Plug
 
 This file is for gotchas that aren't obvious from the API surface or the figma-use skill's reference docs. Add new entries here as you encounter them (per `self-improvement.md`).
 
+## Newly created frames default to an opaque white fill — strip it every time
+
+`figma.createFrame()` and `figma.createAutoLayout()` **always** return a frame whose `fills` is a single opaque white `{r:1, g:1, b:1}` paint. In a dark-themed file (like Crew's DS) every such frame renders as a **white block**. This is hardcoded in the Plugin API — there is **no** file setting, page setting, theme, or "default new-frame fill" knob that changes it. Setting the page canvas background dark does **not** help, because the frame's own fill is opaque and sits on top.
+
+**Rule — the moment you create a container frame, decide its fill explicitly:**
+
+```js
+const g = figma.createAutoLayout('VERTICAL', { name: 'group' });
+g.fills = [];   // transparent — inherits the parent's dark surface. The default for pure layout wrappers.
+```
+
+- **Layout-only wrappers** (groups, rows, toggle clusters — anything that just arranges children): `fills = []`. They should be transparent and let the dark surface behind them show through.
+- **Frames that genuinely need their own surface** (a card, a panel): bind the fill to the DS's dark **surface/background token** (`setBoundVariableForPaint`), never leave the raw white and never hardcode a hex.
+
+This bites *every* dark-theme build and is easy to forget because the white often hides behind child content during the build, then shows in the gaps. Before finishing any build, run a safety sweep and clear strays:
+
+```js
+for (const n of root.findAll(x => x.type==='FRAME' && Array.isArray(x.fills)
+    && x.fills.some(f => f.type==='SOLID' && f.visible!==false && f.color.r>0.9 && f.color.g>0.9 && f.color.b>0.9))) {
+  n.fills = [];
+}
+```
+
 ## Converting an existing frame to auto-layout
 
 When the frame has children that should remain in their current absolute positions (background overlays, drop-shadow rectangles, etc.):

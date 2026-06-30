@@ -179,6 +179,17 @@ Format: see the user-level `~/.claude/CLAUDE.md` "Followup detection" section.
 
 ToC maintenance: each entry's H3 title gets a child bullet under its parent section in `## Contents`. Use GitHub's slug rules (lowercase, spaces → `-`, em-dashes preserved as `--`, punctuation stripped) — easiest to copy the slug from the rendered view's "copy link" hover after a first commit if uncertain.
 
+Scaling — splitting when the file grows large:
+
+A single `docs/followups.md` is the default and right for most projects. But once the queue grows unwieldy — agents start loading it in chunks, the `## Active` section dwarfs everything else — split it into a directory. **The split changes only where entries physically live; the entry template, ticketing protocol, and Active/Resolved/Abandoned lifecycle above are unchanged.**
+
+- **`docs/followups.md` stays as an index/router** — intro, this format pointer, and a topic→file table. It holds no entries (so the file path keeps resolving for any existing references). The per-entry `## Contents` ToC is retired; the topic table replaces it.
+- **Active entries move into per-topic files** under `docs/followups/<category>.md`, partitioned by subject area (mirror the project's own doc/topic boundaries — e.g. an `.agents/<topic>.md` `covers:` split). An agent working in one area loads only its file.
+- **Resolved and Abandoned become their own archive files** — `docs/followups/resolved.md`, `docs/followups/abandoned.md`.
+- **Within each file, entries are `##` headings** (no category wrapper — the filename is the category), newest at top. Anchor slugs derive from heading *text*, so promoting `####`→`##` keeps existing `#anchor` links valid; only the file path changes.
+- **Resolving an entry** cuts it from its topic file into the archive file — same atomic-in-the-PR protocol, just across files instead of across `##` sections.
+- **The project's workflow doc names the concrete categories + the routing rule** for where a new entry goes (and the catch-all file for entries that don't fit cleanly).
+
 Ticketing a followup — bidirectional link + atomic resolution:
 
 When a followup graduates into a Jira ticket, mirror the link both directions and bake the move into the implementing PR so resolution is transactional rather than a thing-to-remember-later.
@@ -212,6 +223,7 @@ Topic-scoped guidance lives in `~/.claude/conventions/`. Each file declares when
 - **`conventions/node.md`** — read when working in a Node/TypeScript project (signal: `package.json` exists). Covers workspaces, `tsconfig`, ESLint/Prettier configs, standard scripts, testing, and frontend component composition.
 - **`conventions/figma.md`** — read before non-trivial Figma work via `use_figma` / the Figma Plugin API. Gotchas the figma-use skill doesn't already cover: auto-layout conversion timing, sticky nested instance overrides, adding variants to existing COMPONENT_SETs, font-binding limitations.
 - **`conventions/crew-dispatch.md`** — read when investigating a `crew run <KEY>` failure or planning a dispatch-flow change. Covers: local-CLI-vs-origin/main (a fix on origin/main needs a `git pull` before the next dispatch picks it up), bare worktrees silently no-op `npx <tool>` until `npm install` runs in them, Playwright pins to a specific Chromium revision.
+- **`conventions/sandbox-host-access.md`** — read when a sandboxed `Bash` command can't reach a service that's actually running: `Connection refused` on `localhost:<port>` for a local dev server/daemon/dashboard, or WSL→Windows interop (`*.exe`/`powershell.exe`/`tailscale.exe`) failing with `socket failed`. Covers the proxy-routing curl recipe for host loopback, the `allowAllUnixSockets` settings fix for WSL interop, why `allowLocalBinding` is the wrong knob, and the `excludedCommands` fallback.
 - **`conventions/self-improvement.md`** — read at the start of any non-trivial work, and revisit when wrapping up. The meta-convention: when you encounter a non-obvious behavior or workaround, capture it somewhere durable (usually another file in this directory). Future-you will hit the same thing again unless it's written down.
 
 Each convention file is generic and reusable; project-specific overrides go in that project's own `CLAUDE.md`.
