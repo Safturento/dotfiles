@@ -129,6 +129,14 @@ test('runCheckin: renders queue AND malformed sections together', () => {
   assert.match(out.hookSpecificOutput.additionalContext, /Malformed reminder files/);
 });
 
+test('renderContext: queue section is passive background context, not an announce directive', () => {
+  const matched = [{ name: 'g', scope: 'global', due: null, body: 'global body', file: 'g.md' }];
+  const ctx = renderContext(matched, '2026-06-17');
+  // The user already sees the queue via systemMessage; the model must not relay it.
+  assert.match(ctx, /do NOT announce/);
+  assert.doesNotMatch(ctx, /first action/);
+});
+
 test('runCheckin: surfaces the full queue every session (no throttle)', () => {
   const dir = mkdtempSync(join(tmpdir(), 'rem-run-'));
   writeFileSync(join(dir, 'g.md'), '---\nname: g\nscope: global\nstatus: active\n---\nglobal body');

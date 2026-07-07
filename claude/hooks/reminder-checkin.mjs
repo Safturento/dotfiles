@@ -140,13 +140,17 @@ export function dueLabel(due, today) {
  * Compact summary — one line per reminder (name, scope/due, gist, file path).
  * Deliberately NOT the full bodies: dumping them bloats every session's context
  * and overflows the hook-output size cap. Read the named file before acting.
+ * Background context only: the systemMessage already shows the queue to the
+ * user directly, so the model must NOT announce these unprompted — this list
+ * exists so it can answer "review reminders" and proactively resolve an item
+ * whose work demonstrably ships mid-session.
  */
 export function renderContext(matched, today, malformed = []) {
   const sections = [];
   if (matched.length) {
     const lines = [
       '# Queued reminders', '',
-      'Raise these with the user as your first action this session, before engaging their request. Summaries only — read the full file before acting on one, and resolve (archive + report) any whose work has demonstrably shipped.', '',
+      'Background context only — the user already sees this queue in the session-start message, so do NOT announce, relay, or summarize these unprompted. Act on one only when the user asks (e.g. "review reminders") or when its work demonstrably ships this session — then read the full file and resolve it (archive + report in passing).', '',
     ];
     for (const r of matched) {
       const dl = dueLabel(r.due, today);
